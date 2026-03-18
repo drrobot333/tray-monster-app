@@ -1,17 +1,54 @@
-# tray_monster_app
+# 🤖 TrayMonster
 
-A new Flutter project.
+시스템 트레이에서 돌아가는 아이들 농장 + 전투 게임
 
-## Getting Started
+연구실에서 일하면서 틈틈이 확인하는 용도로 설계되었습니다.
 
-This project is a starting point for a Flutter application.
+## 🎮 게임 시스템
 
-A few resources to get you started if this is your first Flutter project:
+### 작업대
+- 🌾 **농장** — 3x3 밭에서 24종 작물 재배, 로봇이 자동 관리
+- 🎣 **낚시** — 9종 물고기 낚시
+- ⛏️ **채광** — 9종 광석 채굴
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+### 전투
+- ⚔️ **보스 전투** — 20 스테이지, SPD 기반 실시간 전투
+- 👥 **40종 아군** — Newbie ~ Mythic 5등급
+- 📊 **독립 스탯 강화** — ATK/DEF/SPD/HP 개별 레벨, 등급별 배수 차등
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### 수집
+- 🥚 **알 가챠** — 브론즈/실버/골드/루비/다이아 5등급
+- 🍳 **요리** — 재료 조합, 시장 판매
+- 📖 **도감** — 아군/작물/보스 수집 보너스
+- 📋 **일일 미션** — 매일 자정 갱신
+
+### 편의 기능
+- 💤 **몽유병 시스템** — 2시간 방치 시 효율 점진 감소, 클릭으로 보상 수령
+- 🔓 **스킬 상점** — 일괄 심기, 전투 가속 등 8종 해금
+- 🌤️ **날씨** — 맑음/비/폭풍/밤/폭염/서리, 작물 성장에 영향
+- 🔮 **투명도 조절** — 창 투명도 15%~100%
+
+## 📦 설치
+
+`build/installer/TrayMonster_Setup.exe` 실행
+
+## 🛠️ 빌드
+
+```bash
+# 필요 환경
+# - Flutter SDK
+# - Visual Studio Build Tools (Desktop C++)
+# - Inno Setup 6
+
+flutter pub get
+flutter build windows --release
+
+# 인스톨러 생성
+iscc installer.iss
+```
+
+## 💾 세이브
+
+`%APPDATA%\TrayMonster\save.json`에 자동 저장 (10초 간격)
+
+업데이트해도 세이브 유지됨
