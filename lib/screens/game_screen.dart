@@ -30,7 +30,7 @@ class _GameScreenState extends State<GameScreen> {
   DateTime _lastTick = DateTime.now();
   GameEngine? _engine;
   bool _loaded = false;
-  double _opacity = 1.0; // 0.15 ~ 1.0
+  double _opacity = 1.0;
   bool _showOpacitySlider = false;
 
   @override
@@ -48,7 +48,11 @@ class _GameScreenState extends State<GameScreen> {
       // Load save on first tick
       if (!_loaded) {
         _loaded = true;
-        _engine!.loadGame();
+        _engine!.loadGame().then((_) {
+          final gs = Provider.of<GameState>(context, listen: false);
+          _opacity = gs.windowOpacity;
+          if (!kIsWeb) windowManager.setOpacity(_opacity);
+        });
       }
       _engine!.update(dt);
     });
@@ -215,6 +219,8 @@ class _GameScreenState extends State<GameScreen> {
 
   void _setWindowOpacity(double value) {
     setState(() { _opacity = value; });
+    final gs = Provider.of<GameState>(context, listen: false);
+    gs.windowOpacity = value;
     if (!kIsWeb) {
       windowManager.setOpacity(value);
     }

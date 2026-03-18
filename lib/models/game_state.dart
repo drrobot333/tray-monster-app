@@ -83,6 +83,15 @@ class GameState extends ChangeNotifier {
   int maxArtifactSlots = 2;
   int keyFragments = 0;
 
+  // ── Battle Rations ──
+  int battleRations = 50; // current rations
+  int maxBattleRations = 50;
+  double rationTimer = 0; // time accumulator for natural regen
+
+  // ── Settings ──
+  double windowOpacity = 1.0;
+  int selectedBattleStage = 0;
+
   // ── Codex ──
   List<String> codexAllies = [];
   List<String> codexCrops = [];
@@ -272,6 +281,9 @@ class GameState extends ChangeNotifier {
           'lastResetDay': lastMissionResetDay,
         },
         'skills': skills.toList(),
+        'battleRations': battleRations,
+        'rationTimer': rationTimer,
+        'windowOpacity': windowOpacity,
         'ability': ability.toJson(),
         'artifacts': {
           'owned': ownedArtifacts.map((a) => a.toJson()).toList(),
@@ -487,13 +499,15 @@ class GameState extends ChangeNotifier {
       }
     }
 
-    // Re-apply egg slot skills
-    if (skills.contains('egg_slot_3')) {
-      maxEggSlots = maxEggSlots < 3 ? 3 : maxEggSlots;
-    }
-    if (skills.contains('egg_slot_4')) {
-      maxEggSlots = maxEggSlots < 4 ? 4 : maxEggSlots;
-    }
+    // Re-apply slot skills
+    if (skills.contains('egg_slot_3')) maxEggSlots = maxEggSlots < 3 ? 3 : maxEggSlots;
+    if (skills.contains('egg_slot_4')) maxEggSlots = maxEggSlots < 4 ? 4 : maxEggSlots;
+    if (skills.contains('artifact_slot_3')) maxArtifactSlots = maxArtifactSlots < 3 ? 3 : maxArtifactSlots;
+    if (skills.contains('artifact_slot_4')) maxArtifactSlots = maxArtifactSlots < 4 ? 4 : maxArtifactSlots;
+
+    battleRations = (data['battleRations'] as num?)?.toInt() ?? 50;
+    rationTimer = (data['rationTimer'] as num?)?.toDouble() ?? 0;
+    windowOpacity = (data['windowOpacity'] as num?)?.toDouble() ?? 1.0;
 
     // ── Ability ──
     if (data['ability'] is Map) {

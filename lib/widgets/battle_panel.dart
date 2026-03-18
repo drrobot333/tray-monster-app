@@ -36,71 +36,84 @@ class BattlePanel extends StatelessWidget {
   }
 
   Widget _buildInactive(BuildContext context, GameState gs, dynamic battle) {
-    final bossName = _getBossName(gs.currentStage);
+    final stage = gs.selectedBattleStage > 0 ? gs.selectedBattleStage : gs.currentStage;
+    final bossName = _getBossName(stage);
+    final isReplay = stage < gs.currentStage;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Row(
           children: [
-            const Text(
-              '\u2694\uFE0F ',
-              style: TextStyle(fontSize: 16),
-            ),
+            const Text('⚔️ ', style: TextStyle(fontSize: 16)),
             Text(
-              'Stage ${gs.currentStage} - $bossName',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
+              'Stage $stage - $bossName',
+              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
             ),
+            if (isReplay)
+              Container(
+                margin: const EdgeInsets.only(left: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                decoration: BoxDecoration(color: const Color(0xFFFF9800).withValues(alpha: 0.2), borderRadius: BorderRadius.circular(3)),
+                child: const Text('재도전', style: TextStyle(color: Color(0xFFFF9800), fontSize: 9)),
+              ),
             const Spacer(),
             if (battle.result != null)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: battle.result == 'win'
-                      ? const Color(0xFF4CAF50).withValues(alpha: 0.2)
-                      : const Color(0xFFFF5252).withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(4),
-                ),
+                  color: battle.result == 'win' ? const Color(0xFF4CAF50).withValues(alpha: 0.2) : const Color(0xFFFF5252).withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(4)),
                 child: Text(
-                  battle.result == 'win' ? '\uD83C\uDFC6 \uC2B9\uB9AC!' : '\uD83D\uDCA5 \uD328\uBC30',
-                  style: TextStyle(
-                    color: battle.result == 'win'
-                        ? const Color(0xFF4CAF50)
-                        : const Color(0xFFFF5252),
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                  battle.result == 'win' ? '🏆 승리!' : '💥 패배',
+                  style: TextStyle(color: battle.result == 'win' ? const Color(0xFF4CAF50) : const Color(0xFFFF5252), fontSize: 12, fontWeight: FontWeight.bold)),
               ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
+        // Stage selector (if cleared stages exist)
+        if (gs.maxClearedStage > 0)
+          SizedBox(
+            height: 28,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: List.generate(gs.currentStage, (i) {
+                final s = i + 1;
+                final isSelected = s == stage;
+                final isCleared = s <= gs.maxClearedStage;
+                return GestureDetector(
+                  onTap: () { gs.selectedBattleStage = s; gs.notify(); },
+                  child: Container(
+                    width: 32, margin: const EdgeInsets.only(right: 4),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: isSelected ? const Color(0xFF4CAF50).withValues(alpha: 0.3) : const Color(0xFF1a1a2e),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: isSelected ? const Color(0xFF4CAF50) : isCleared ? const Color(0xFF666666) : const Color(0xFF333333))),
+                    child: Text('$s', style: TextStyle(color: isSelected ? Colors.white : isCleared ? Colors.white70 : Colors.white38, fontSize: 11, fontWeight: FontWeight.bold)),
+                  ),
+                );
+              }),
+            ),
+          ),
+        const SizedBox(height: 6),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ElevatedButton.icon(
-              onPressed: () => engine.startBattle(gs.currentStage),
-              icon: const Icon(Icons.play_arrow, size: 16),
-              label: const Text('\uC804\uD22C \uC2DC\uC791'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4CAF50),
-                foregroundColor: Colors.white,
-              ),
-            ),
-            const SizedBox(width: 8),
-            if (battle.result != null)
+            Column(mainAxisSize: MainAxisSize.min, children: [
               ElevatedButton.icon(
-                onPressed: () => engine.startBattle(gs.currentStage),
-                icon: const Icon(Icons.replay, size: 16),
-                label: const Text('\uB2E4\uC2DC \uC2DC\uC791'),
+                onPressed: gs.battleRations >= 10 ? () => engine.startBattle(stage) : null,
+                icon: const Icon(Icons.play_arrow, size: 16),
+                label: Text(isReplay ? '재도전' : '전투 시작'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF333333),
-                ),
+                  backgroundColor: gs.battleRations >= 10
+                    ? (isReplay ? const Color(0xFFFF9800) : const Color(0xFF4CAF50))
+                    : const Color(0xFF333333),
+                  foregroundColor: Colors.white),
               ),
+              Text('🍖 -10', style: TextStyle(
+                color: gs.battleRations >= 10 ? Colors.white38 : const Color(0xFFFF5252), fontSize: 9)),
+            ]),
           ],
         ),
       ],

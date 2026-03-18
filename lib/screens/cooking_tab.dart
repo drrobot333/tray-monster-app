@@ -242,7 +242,7 @@ class CookingTab extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(recipe.name, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
-                      Text('⏱ ${recipe.cookTime}초',
+                      Text('⏱ ${recipe.cookTime}초 | 🍖+${recipe.rationRestore}',
                           style: const TextStyle(color: Colors.white54, fontSize: 10)),
                     ],
                   ),

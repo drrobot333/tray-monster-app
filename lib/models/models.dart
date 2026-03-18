@@ -297,11 +297,11 @@ class RecipeIngredient {
 
 class Recipe {
   final String id, name, emoji;
-  final int tier, cookTime, basePrice;
+  final int tier, cookTime, basePrice, rationRestore;
   final List<RecipeIngredient> ingredients;
   const Recipe({required this.id, required this.name, required this.tier,
     required this.cookTime, required this.basePrice, required this.ingredients,
-    this.emoji = '🍽️'});
+    this.emoji = '🍽️', this.rationRestore = 1});
 }
 
 class CookingSlot {

@@ -146,6 +146,7 @@ class GameEngine {
     updateEggs(dt);
     updateBattle(dt);
     updateFarmEvents(dt);
+    updateBattleRations(dt);
     syncCodex();
     _updateFloatingTexts(dt);
 
@@ -775,6 +776,23 @@ class GameEngine {
   // ============================================================
   // BATTLE
   // ============================================================
+  static const int battleRationCost = 10;
+
+  void updateBattleRations(double dt) {
+    if (state.battleRations >= state.maxBattleRations) return;
+    state.rationTimer += dt;
+    // 1 ration per 10 minutes (600 seconds)
+    while (state.rationTimer >= 600 && state.battleRations < state.maxBattleRations) {
+      state.rationTimer -= 600;
+      state.battleRations++;
+    }
+  }
+
+  // Called from cooking — can exceed max (no cap)
+  void addBattleRations(int amount) {
+    state.battleRations += amount;
+  }
+
   void startBattle(int stage) {
     final bossData = getBossData(stage);
     if (bossData == null) return;
@@ -782,6 +800,11 @@ class GameEngine {
       _notify('팀에 아군을 배치하세요!');
       return;
     }
+    if (state.battleRations < battleRationCost) {
+      _notify('🍖 식량 부족! (${state.battleRations}/$battleRationCost)');
+      return;
+    }
+    state.battleRations -= battleRationCost;
 
     advanceMission('battle', 1);
 
@@ -1268,7 +1291,7 @@ class GameEngine {
 
     // Key fragments from boss (scales with stage)
     // Keys scale exponentially: stage 1=2, 5=10, 10=30, 15=60, 20=100
-    final keyDrop = (pow(stage, 1.5).floor() * mult).floor();
+    final keyDrop = max(1, (pow(stage, 1.5).floor() * mult).floor());
     state.keyFragments += keyDrop;
 
     for (final mat in drops.materials) {
@@ -1781,7 +1804,9 @@ class GameEngine {
     final price = (recipe.basePrice * mult).floor();
     state.gold += price;
     state.stats['totalGoldEarned'] = (state.stats['totalGoldEarned'] ?? 0) + price;
-    _notify('${recipe.name} 자동 판매! +${price}G');
+    // Restore battle rations
+    addBattleRations(recipe.rationRestore);
+    _notify('${recipe.name} 판매! +${price}G +🍖${recipe.rationRestore}');
     // 슬롯 비우기
     slot.recipeId = null;
     slot.timeLeft = 0;
@@ -1946,6 +1971,8 @@ class GameEngine {
 
     if (id == 'egg_slot_3') state.maxEggSlots = max(state.maxEggSlots, 3);
     if (id == 'egg_slot_4') state.maxEggSlots = max(state.maxEggSlots, 4);
+    if (id == 'artifact_slot_3') state.maxArtifactSlots = max(state.maxArtifactSlots, 3);
+    if (id == 'artifact_slot_4') state.maxArtifactSlots = max(state.maxArtifactSlots, 4);
 
     _notify('${skill['name']} 해금!');
   }

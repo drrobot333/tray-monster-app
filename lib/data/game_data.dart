@@ -480,6 +480,8 @@ const List<SkillDef> _skills = [
   SkillDef(id: 'offline_bonus', name: '오프라인 보너스', desc: '백그라운드 수입 효율 50% → 80%', cost: 120000),
   SkillDef(id: 'egg_slot_4', name: '알 슬롯 +2', desc: '부화 슬롯 3개 → 4개로 증가', cost: 200000, requires: 'egg_slot_3'),
   SkillDef(id: 'double_harvest', name: '이중 수확', desc: '수확 보상 2배 확률 20%', cost: 500000),
+  SkillDef(id: 'artifact_slot_3', name: '유물 슬롯 +1', desc: '유물 장착 슬롯 2개 → 3개', cost: 300000),
+  SkillDef(id: 'artifact_slot_4', name: '유물 슬롯 +2', desc: '유물 장착 슬롯 3개 → 4개', cost: 800000, requires: 'artifact_slot_3'),
 ];
 
 // =========================================================================
@@ -550,12 +552,12 @@ class GameData {
       rarityWeights: {'Normal': 50, 'Rookie': 35, 'Legendary': 15}),
     ArtifactChestTier(id: 'gold_chest', name: '황금 상자', goldCost: 20000, keyCost: 80,
       goldW: 30, matW: 25, artifactW: 45,
-      rarityWeights: {'Rookie': 40, 'Legendary': 40, 'Mythic': 20}),
+      rarityWeights: {'Rookie': 45, 'Legendary': 45, 'Mythic': 10}),
     ArtifactChestTier(id: 'platinum', name: '백금 상자', goldCost: 60000, keyCost: 200,
       goldW: 25, matW: 20, artifactW: 55,
-      rarityWeights: {'Rookie': 20, 'Legendary': 45, 'Mythic': 35}),
+      rarityWeights: {'Rookie': 20, 'Legendary': 55, 'Mythic': 25}),
     ArtifactChestTier(id: 'diamond_chest', name: '다이아 상자', goldCost: 150000, keyCost: 500,
       goldW: 20, matW: 15, artifactW: 65,
-      rarityWeights: {'Legendary': 40, 'Mythic': 60}),
+      rarityWeights: {'Legendary': 55, 'Mythic': 45}),
   ];
 }

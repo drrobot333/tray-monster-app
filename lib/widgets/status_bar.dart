@@ -5,9 +5,20 @@ import '../models/game_state.dart';
 class StatusBar extends StatelessWidget {
   const StatusBar({super.key});
 
+  String _fmt(int n) {
+    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
+    if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}K';
+    return '$n';
+  }
+
   @override
   Widget build(BuildContext context) {
     final gs = context.watch<GameState>();
+
+    // Ration timer: seconds until next ration
+    final rationSecs = gs.battleRations >= gs.maxBattleRations ? 0 : (600 - gs.rationTimer).floor();
+    final rationMM = (rationSecs ~/ 60).toString().padLeft(2, '0');
+    final rationSS = (rationSecs % 60).toString().padLeft(2, '0');
 
     return Container(
       height: 48,
@@ -22,7 +33,7 @@ class StatusBar extends StatelessWidget {
           const Icon(Icons.monetization_on, color: Color(0xFFFFD700), size: 18),
           const SizedBox(width: 4),
           Text(
-            '${gs.gold}',
+            _fmt(gs.gold),
             style: const TextStyle(
               color: Color(0xFFFFD700),
               fontWeight: FontWeight.bold,
@@ -40,6 +51,21 @@ class StatusBar extends StatelessWidget {
           _materialIcon(context, '\uD83E\uDD5A', 'eggFragment', gs.materials['eggFragment'] ?? 0, '\uC54C \uC870\uAC01'),
           const SizedBox(width: 8),
           _materialIcon(context, '\uD83E\uDDEC', 'mutagen', gs.materials['mutagen'] ?? 0, '\uBBA4\uD0C0\uC820'),
+          const SizedBox(width: 8),
+          // Battle rations
+          Tooltip(
+            message: '전투 식량: 전투 1회당 10개 소모\n10분마다 1개 자동 회복\n요리로 추가 회복 가능',
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Text('🍖${gs.battleRations}/${gs.maxBattleRations}',
+                style: TextStyle(
+                  color: gs.battleRations >= 10 ? const Color(0xFFFF9800) : const Color(0xFFFF5252),
+                  fontSize: 11)),
+              if (gs.battleRations < gs.maxBattleRations) ...[
+                const SizedBox(width: 2),
+                Text('$rationMM:$rationSS', style: const TextStyle(color: Colors.white38, fontSize: 8)),
+              ],
+            ]),
+          ),
           const Spacer(),
           // Weather with tooltip
           Tooltip(
@@ -80,7 +106,7 @@ class StatusBar extends StatelessWidget {
           Text(emoji, style: const TextStyle(fontSize: 13)),
           const SizedBox(width: 2),
           Text(
-            '$count',
+            _fmt(count),
             style: const TextStyle(color: Colors.white70, fontSize: 12),
           ),
         ],
