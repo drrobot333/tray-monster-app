@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import '../models/models.dart';
 import '../models/game_state.dart';
 import '../data/game_data.dart';
@@ -296,27 +297,48 @@ class GameEngine {
     // Apply codex gold bonus
     goldEarned = (goldEarned * (1 + getCodexBonus()['goldMult']!)).floor();
 
+    // Sleepwalking: 50% gold, accumulate for later
+    final eff = _robotEfficiency(state.robot);
+    goldEarned = (goldEarned * eff).floor();
+
     // Double harvest skill
     if (hasSkill('double_harvest') && _rng.nextDouble() < 0.2) {
       goldEarned *= 2;
     }
 
-    state.gold += goldEarned;
+    if (state.robot.sleepwalking) {
+      // Accumulate for later collection
+      state.robot.pendingGold += goldEarned;
+    } else {
+      state.gold += goldEarned;
+    }
     state.stats['totalGoldEarned'] = (state.stats['totalGoldEarned'] ?? 0) + goldEarned;
     state.stats['cropsHarvested'] = (state.stats['cropsHarvested'] ?? 0) + 1;
 
     // Process drops
+    int itemCount = 0;
     for (final drop in drops) {
       final key = matKey(drop.type);
       if (key == 'random' || key == 'random_material') {
-        const mats = ['attackCrystal', 'defenseCore', 'speedChip'];
-        final chosen = mats[_rng.nextInt(mats.length)];
-        state.materials[chosen] = (state.materials[chosen] ?? 0) + drop.amount;
+        if (state.robot.sleepwalking) {
+          itemCount += drop.amount;
+        } else {
+          const mats = ['attackCrystal', 'defenseCore', 'speedChip'];
+          final chosen = mats[_rng.nextInt(mats.length)];
+          state.materials[chosen] = (state.materials[chosen] ?? 0) + drop.amount;
+        }
       } else if (key == 'golden_boost' || key == 'golden_guarantee') {
-        // Special effects handled elsewhere
+        // Special effects
       } else if (state.materials.containsKey(key)) {
-        state.materials[key] = (state.materials[key] ?? 0) + drop.amount;
+        if (state.robot.sleepwalking) {
+          itemCount += drop.amount;
+        } else {
+          state.materials[key] = (state.materials[key] ?? 0) + drop.amount;
+        }
       }
+    }
+    if (state.robot.sleepwalking) {
+      state.robot.pendingItems += itemCount;
     }
 
     // Cooking ingredient: 작물 ID 자체가 재료 (50% 확률)
@@ -384,12 +406,63 @@ class GameEngine {
     return available.first;
   }
 
+  // Sleepwalk check interval: 2 hours = 7200 seconds
+  static const double _sleepwalkThreshold = 7200;
+
+  void updateRobotSleepwalk() {
+    final robot = state.robot;
+    final elapsed = state.time - robot.awakeSince;
+    if (!robot.sleepwalking && elapsed > _sleepwalkThreshold) {
+      robot.sleepwalking = true;
+      _notify('${robot.name}이(가) 졸리기 시작했어요... 💤');
+    }
+  }
+
+  void wakeUpRobot(RobotState robot) {
+    if (robot.sleepwalking || robot.pendingGold > 0 || robot.pendingItems > 0) {
+      // Collect pending rewards
+      if (robot.pendingGold > 0 || robot.pendingItems > 0) {
+        state.gold += robot.pendingGold;
+        // Distribute pending items to random materials
+        final mats = ['attackCrystal', 'defenseCore', 'speedChip'];
+        for (int i = 0; i < robot.pendingItems; i++) {
+          final key = mats[_rng.nextInt(mats.length)];
+          state.materials[key] = (state.materials[key] ?? 0) + 1;
+        }
+        _notify('${robot.name} 기상! +${robot.pendingGold}G +${robot.pendingItems}재료');
+        state.floatingTexts.add(FloatingText(
+          text: '+${robot.pendingGold}G',
+          col: robot.x, row: robot.y,
+          color: 0xFFFFD700,
+        ));
+      }
+      robot.pendingGold = 0;
+      robot.pendingItems = 0;
+      robot.sleepwalking = false;
+      robot.awakeSince = state.time;
+    } else {
+      // Not sleepwalking, just reset timer
+      robot.awakeSince = state.time;
+    }
+  }
+
+  // Returns efficiency multiplier based on time since last click
+  // 0~2h: 100%, 2~4h: 50%, 4~6h: 20%, 6h+: 5%
+  double _robotEfficiency(RobotState robot) {
+    final elapsed = state.time - robot.awakeSince;
+    if (elapsed < 7200) return 1.0;       // 0~2h
+    if (elapsed < 14400) return 0.5;      // 2~4h
+    if (elapsed < 21600) return 0.2;      // 4~6h
+    return 0.05;                          // 6h+
+  }
+
   void updateRobot(double dt) {
     final robot = state.robot;
     final tiles = state.farmTiles;
     final weather = _weatherEffects();
 
     robot.maxStamina = _getMaxStamina().toDouble();
+    updateRobotSleepwalk();
 
     // Animation timer
     robot.animTimer += dt;
@@ -716,8 +789,8 @@ class GameEngine {
     battle.bossMaxHp = bossData.hp;
     battle.timer = 60;
     battle.log = ['전투 시작!'];
-    battle.turnInterval = hasSkill('battle_speed') ? 1.0 : 2.0;
-    battle.turnTimer = battle.turnInterval * 0.75;
+    battle.turnInterval = 1.0; // buff tick interval
+    battle.turnTimer = 1.0; // boss action timer
     battle.result = null;
     battle.resultTimer = 0;
 
@@ -734,6 +807,7 @@ class GameEngine {
       final ally = state.allies[idx];
       final levelMult = 1 + (ally.level - 1) * 0.1;
       final codexAtkMult = 1 + getCodexBonus()['atkMult']!;
+      final effSpd = (ally.baseSpd * levelMult).floor();
       return BattleAllyState(
         id: ally.id,
         name: ally.name,
@@ -742,8 +816,9 @@ class GameEngine {
         maxHp: (ally.baseHp * levelMult).floor(),
         atk: (ally.baseAtk * levelMult * codexAtkMult).floor(),
         def: (ally.baseDef * levelMult).floor(),
-        spd: (ally.baseSpd * levelMult).floor(),
+        spd: effSpd,
         ability: ally.ability,
+        actionTimer: 30.0 / max(1, effSpd),
       );
     }).toList();
   }
@@ -773,15 +848,76 @@ class GameEngine {
       return;
     }
 
-    // Turn processing
-    battle.turnTimer -= dt;
-    if (battle.turnTimer <= 0) {
-      battle.turnTimer = battle.turnInterval;
-      processTurn();
+    // Real-time combat: action interval = 15.0 / SPD seconds
+    // SPD 5 = 3.0s, SPD 10 = 1.5s, SPD 20 = 0.75s
+    final speedMult = hasSkill('battle_speed') ? 1.5 : 1.0;
+
+    // Check ally wipe first
+    final anyAlive = battle.allyStates.any((a) => a.alive);
+    if (!anyAlive) {
+      battle.result = 'lose';
+      battle.resultTimer = 2;
+      battle.log.add('전멸! 패배...');
+      return;
     }
 
-    // Update buff/debuff durations
-    _updateBuffs(battle);
+    // Ally actions
+    for (final ally in battle.allyStates) {
+      if (!ally.alive || battle.bossHp <= 0) continue;
+      ally.actionTimer -= dt * speedMult;
+      if (ally.actionTimer <= 0) {
+        final effSpd = _getEffectiveStatAlly(ally, 'spd');
+        ally.actionTimer = 30.0 / max(1, effSpd);
+
+        ally.abilityCharges++;
+        if (ally.abilityCharges >= ally.ability.cooldown) {
+          ally.abilityCharges = 0;
+          _executeAllyAbility(ally);
+        } else {
+          final dmg = calculateDamage(
+            _getEffectiveStatAlly(ally, 'atk'),
+            _getEffectiveStat(battle.bossState, 'def'),
+          );
+          battle.bossHp -= dmg;
+          battle.log.add('${ally.name}: $dmg');
+        }
+      }
+    }
+
+    // Check boss death
+    if (battle.bossHp <= 0) {
+      battle.bossHp = 0;
+      battle.result = 'win';
+      battle.resultTimer = 2;
+      battle.log.add('보스 처치! 승리!');
+      return;
+    }
+
+    // Boss action
+    battle.turnTimer -= dt * speedMult;
+    if (battle.turnTimer <= 0) {
+      final bossData = getBossData(battle.stage);
+      if (bossData != null) {
+        final bossSpd = _getEffectiveStat(battle.bossState, 'spd');
+        battle.turnTimer = 30.0 / max(1, bossSpd);
+        executeBossAction(bossData);
+      }
+    }
+
+    // Check ally wipe after boss action
+    if (!battle.allyStates.any((a) => a.alive)) {
+      battle.result = 'lose';
+      battle.resultTimer = 2;
+      battle.log.add('전멸! 패배...');
+      return;
+    }
+
+    // Update buff/debuff durations (tick every 2 seconds)
+    battle.turnInterval -= dt;
+    if (battle.turnInterval <= 0) {
+      battle.turnInterval = 2.0;
+      _updateBuffs(battle);
+    }
   }
 
   int _getEffectiveStat(Map<String, dynamic> entity, String stat) {
@@ -824,54 +960,7 @@ class GameEngine {
     return max(1, raw.floor());
   }
 
-  void processTurn() {
-    final battle = state.battle;
-    final bossData = getBossData(battle.stage);
-    if (bossData == null) return;
-
-    // Allies act first (sorted by speed)
-    final aliveAllies = battle.allyStates.where((a) => a.alive).toList();
-    aliveAllies.sort((a, b) => _getEffectiveStatAlly(b, 'spd') - _getEffectiveStatAlly(a, 'spd'));
-
-    for (final ally in aliveAllies) {
-      if (!battle.active || battle.bossHp <= 0) break;
-
-      if (ally.cooldown > 0) {
-        ally.cooldown--;
-        // Basic attack
-        final dmg = calculateDamage(
-          _getEffectiveStatAlly(ally, 'atk'),
-          _getEffectiveStat(battle.bossState, 'def'),
-        );
-        battle.bossHp -= dmg;
-        battle.log.add('${ally.name}: $dmg 데미지');
-      } else {
-        // Use ability
-        _executeAllyAbility(ally);
-        ally.cooldown = ally.ability.cooldown;
-      }
-    }
-
-    // Check boss death
-    if (battle.bossHp <= 0) {
-      battle.bossHp = 0;
-      battle.result = 'win';
-      battle.resultTimer = 2;
-      battle.log.add('보스 처치! 승리!');
-      return;
-    }
-
-    // Boss acts
-    executeBossAction(bossData);
-
-    // Check ally deaths
-    final stillAlive = battle.allyStates.where((a) => a.alive).toList();
-    if (stillAlive.isEmpty) {
-      battle.result = 'lose';
-      battle.resultTimer = 2;
-      battle.log.add('전멸! 패배...');
-    }
-  }
+  // processTurn removed — now using real-time SPD-based combat
 
   void _executeAllyAbility(BattleAllyState ally) {
     final battle = state.battle;
@@ -2017,26 +2106,36 @@ class GameEngine {
   }
 
   // ============================================================
-  // SAVE / LOAD
+  // SAVE / LOAD — file-based (AppData folder, survives reinstall)
   // ============================================================
+  File get _saveFile {
+    final home = Platform.environment['APPDATA'] ??
+                 Platform.environment['HOME'] ??
+                 '.';
+    final dir = Directory('$home/TrayMonster');
+    if (!dir.existsSync()) dir.createSync(recursive: true);
+    return File('${dir.path}/save.json');
+  }
+
   Future<void> saveGame() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('traymonster_save', json.encode(state.toJson()));
+      final jsonStr = json.encode(state.toJson());
+      await _saveFile.writeAsString(jsonStr);
     } catch (e) {
-      // Save failed silently
+      debugPrint('Save failed: $e');
     }
   }
 
   Future<void> loadGame() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString('traymonster_save');
-      if (raw == null) return;
+      final file = _saveFile;
+      if (!file.existsSync()) return;
+      final raw = await file.readAsString();
+      if (raw.isEmpty) return;
       final data = json.decode(raw) as Map<String, dynamic>;
       state.loadFromJson(data);
     } catch (e) {
-      // Load failed silently
+      debugPrint('Load failed: $e');
     }
   }
 }

@@ -41,27 +41,29 @@ class StatusBar extends StatelessWidget {
           const SizedBox(width: 8),
           _materialIcon(context, '\uD83E\uDDEC', 'mutagen', gs.materials['mutagen'] ?? 0, '\uBBA4\uD0C0\uC820'),
           const Spacer(),
-          // Weather
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1a1a2e),
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: const Color(0xFF333333)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+          // Weather with tooltip
+          Tooltip(
+            richMessage: TextSpan(
               children: [
-                Text(
-                  _weatherIcon(gs.currentWeather),
-                  style: const TextStyle(fontSize: 14),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  gs.currentWeather,
-                  style: const TextStyle(color: Colors.white70, fontSize: 11),
-                ),
+                TextSpan(text: '${_weatherName(gs.currentWeather)}\n', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                TextSpan(text: _weatherEffect(gs.currentWeather), style: const TextStyle(fontSize: 11)),
               ],
+            ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1a1a2e),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: const Color(0xFF333333)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(_weatherIcon(gs.currentWeather), style: const TextStyle(fontSize: 14)),
+                  const SizedBox(width: 4),
+                  Text(_weatherName(gs.currentWeather), style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                ],
+              ),
             ),
           ),
         ],
@@ -84,6 +86,30 @@ class StatusBar extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _weatherName(String weather) {
+    switch (weather) {
+      case 'sunny': return '맑음';
+      case 'rain': return '비';
+      case 'storm': return '폭풍';
+      case 'night': return '밤';
+      case 'heatwave': return '폭염';
+      case 'frost': return '서리';
+      default: return weather;
+    }
+  }
+
+  String _weatherEffect(String weather) {
+    switch (weather) {
+      case 'sunny': return '작물 성장 +30%';
+      case 'rain': return '자동 물주기, 성장 +10%';
+      case 'storm': return '희귀 드롭 +100%\n로봇 체력소모 +50%';
+      case 'night': return '돌연변이 확률 +50%';
+      case 'heatwave': return '불/사막 작물 2배 성장\n다른 작물 -20%';
+      case 'frost': return '크리스탈 작물 2배 성장\n다른 작물 -20%';
+      default: return '';
+    }
   }
 
   String _weatherIcon(String weather) {

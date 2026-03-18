@@ -297,33 +297,6 @@ class EggTab extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               child: Column(
                 children: [
-                  ListTile(
-                    dense: true,
-                    leading: const Text('\uD83D\uDCB0', style: TextStyle(fontSize: 20)),
-                    title: const Text(
-                      '\uACE8\uB4DC \u2192 \uC54C \uC870\uAC01',
-                      style: TextStyle(color: Colors.white, fontSize: 13),
-                    ),
-                    subtitle: const Text(
-                      '500 \uACE8\uB4DC = 50 \uC870\uAC01',
-                      style: TextStyle(color: Colors.white54, fontSize: 11),
-                    ),
-                    trailing: ElevatedButton(
-                      onPressed: gs.gold >= 500
-                          ? () {
-                              gs.gold -= 500;
-                              gs.materials['eggFragment'] = (gs.materials['eggFragment'] ?? 0) + 50;
-                              gs.notify();
-                            }
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4CAF50),
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                      ),
-                      child: const Text('\uAD50\uD658', style: TextStyle(fontSize: 11)),
-                    ),
-                  ),
-                  const Divider(color: Color(0xFF333333), height: 16),
                   const Text(
                     '\uD83E\uDD5A \uC54C \uC870\uAC01\uC73C\uB85C \uC54C \uAD6C\uB9E4',
                     style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
@@ -331,7 +304,7 @@ class EggTab extends StatelessWidget {
                   const SizedBox(height: 8),
                   ...List.generate(5, (i) {
                     final tierKey = _tierKeys[i];
-                    final fragmentCost = [50, 150, 400, 1000, 3000][i];
+                    final fragmentCost = [100, 300, 800, 2000, 5000][i];
                     final frags = gs.materials['eggFragment'] ?? 0;
                     final canExchange = frags >= fragmentCost && gs.eggs.length < gs.maxEggSlots;
                     return Padding(

@@ -42,6 +42,20 @@ class UpgradeTab extends StatelessWidget {
     return (100 * pow(1.5, level - 1)).floor();
   }
 
+  int _allyMatCost(int level) {
+    return (3 * pow(1.3, level - 1)).floor();
+  }
+
+  String _matKeyForStat(String stat) {
+    switch (stat) {
+      case 'atk': return 'attackCrystal';
+      case 'def': return 'defenseCore';
+      case 'spd': return 'speedChip';
+      case 'hp': return 'mutagen';
+      default: return '';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final gs = context.watch<GameState>();
@@ -237,6 +251,7 @@ class UpgradeTab extends StatelessWidget {
             final allyIndex = entry.key;
             final ally = entry.value;
             final upgradeCost = _allyUpgradeCost(ally.level);
+            final matCost = _allyMatCost(ally.level);
             return Card(
               color: const Color(0xFF0d1117),
               shape: RoundedRectangleBorder(
@@ -269,47 +284,35 @@ class UpgradeTab extends StatelessWidget {
                     Row(
                       children: [
                         _allyStatButton(
-                          context,
-                          icon: '\u2694',
-                          label: '공격',
-                          value: '${ally.baseAtk}',
+                          context, gs: gs,
+                          icon: '\u2694', label: '공격', value: '${ally.baseAtk}',
                           color: const Color(0xFFFF5252),
-                          cost: upgradeCost,
+                          cost: upgradeCost, matCost: matCost, stat: 'atk',
                           onUpgrade: () => engine.upgradeAlly(allyIndex, 'atk'),
-                          canAfford: gs.gold >= upgradeCost,
                         ),
                         const SizedBox(width: 6),
                         _allyStatButton(
-                          context,
-                          icon: '\uD83D\uDEE1',
-                          label: '방어',
-                          value: '${ally.baseDef}',
+                          context, gs: gs,
+                          icon: '\uD83D\uDEE1', label: '방어', value: '${ally.baseDef}',
                           color: const Color(0xFF2196F3),
-                          cost: upgradeCost,
+                          cost: upgradeCost, matCost: matCost, stat: 'def',
                           onUpgrade: () => engine.upgradeAlly(allyIndex, 'def'),
-                          canAfford: gs.gold >= upgradeCost,
                         ),
                         const SizedBox(width: 6),
                         _allyStatButton(
-                          context,
-                          icon: '\u26A1',
-                          label: '속도',
-                          value: '${ally.baseSpd}',
+                          context, gs: gs,
+                          icon: '\u26A1', label: '속도', value: '${ally.baseSpd}',
                           color: const Color(0xFFFFD700),
-                          cost: upgradeCost,
+                          cost: upgradeCost, matCost: matCost, stat: 'spd',
                           onUpgrade: () => engine.upgradeAlly(allyIndex, 'spd'),
-                          canAfford: gs.gold >= upgradeCost,
                         ),
                         const SizedBox(width: 6),
                         _allyStatButton(
-                          context,
-                          icon: '\u2764',
-                          label: 'HP',
-                          value: '${ally.baseHp}',
+                          context, gs: gs,
+                          icon: '\u2764', label: 'HP', value: '${ally.baseHp}',
                           color: const Color(0xFF4CAF50),
-                          cost: upgradeCost,
+                          cost: upgradeCost, matCost: matCost, stat: 'hp',
                           onUpgrade: () => engine.upgradeAlly(allyIndex, 'hp'),
-                          canAfford: gs.gold >= upgradeCost,
                         ),
                       ],
                     ),
@@ -479,17 +482,26 @@ class UpgradeTab extends StatelessWidget {
 
   Widget _allyStatButton(
     BuildContext context, {
+    required GameState gs,
     required String icon,
     required String label,
     required String value,
     required Color color,
     required int cost,
+    required int matCost,
+    required String stat,
     required VoidCallback onUpgrade,
-    required bool canAfford,
   }) {
+    final matKey = _matKeyForStat(stat);
+    final matHave = gs.materials[matKey] ?? 0;
+    final canAfford = gs.gold >= cost && matHave >= matCost;
+
+    const matIcons = {'atk': '⚔', 'def': '🛡', 'spd': '⚡', 'hp': '🧬'};
+    final matIcon = matIcons[stat] ?? '?';
+
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(6),
+        padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(6),
@@ -501,14 +513,23 @@ class UpgradeTab extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(icon, style: TextStyle(fontSize: 12, color: color)),
-                const SizedBox(width: 4),
+                const SizedBox(width: 3),
                 Text(value, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
               ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
+            // Material cost display
+            Text(
+              '$matIcon$matCost (보유:$matHave)',
+              style: TextStyle(
+                fontSize: 7,
+                color: matHave >= matCost ? Colors.white54 : const Color(0xFFFF5252),
+              ),
+            ),
+            const SizedBox(height: 2),
             SizedBox(
               width: double.infinity,
-              height: 22,
+              height: 20,
               child: ElevatedButton(
                 onPressed: canAfford ? onUpgrade : null,
                 style: ElevatedButton.styleFrom(
@@ -517,8 +538,8 @@ class UpgradeTab extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                 ),
                 child: Text(
-                  '$label \uD83D\uDCB0$cost',
-                  style: const TextStyle(fontSize: 7, color: Colors.white),
+                  '💰$cost',
+                  style: const TextStyle(fontSize: 8, color: Colors.white),
                 ),
               ),
             ),

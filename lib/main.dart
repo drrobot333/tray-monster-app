@@ -1,10 +1,18 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:window_manager/window_manager.dart';
 import 'models/game_state.dart';
 import 'screens/game_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize window manager for desktop (opacity control only)
+  if (!kIsWeb) {
+    await windowManager.ensureInitialized();
+  }
+
   runApp(const TrayMonsterApp());
 }
 

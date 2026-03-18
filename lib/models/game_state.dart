@@ -206,6 +206,10 @@ class GameState extends ChangeNotifier {
             'y': robot.y,
             'stamina': robot.stamina,
             'name': robot.name,
+            'awakeSince': robot.awakeSince,
+            'sleepwalking': robot.sleepwalking,
+            'pendingGold': robot.pendingGold,
+            'pendingItems': robot.pendingItems,
           },
         },
         'fishing': {
@@ -318,7 +322,11 @@ class GameState extends ChangeNotifier {
           ..pixelX = rx * 48.0 + 24.0
           ..pixelY = ry * 48.0 + 24.0
           ..stamina = (r['stamina'] as num?)?.toDouble() ?? 100.0
-          ..state = 'idle';
+          ..state = 'idle'
+          ..awakeSince = (r['awakeSince'] as num?)?.toDouble() ?? 0
+          ..sleepwalking = r['sleepwalking'] ?? false
+          ..pendingGold = (r['pendingGold'] as num?)?.toInt() ?? 0
+          ..pendingItems = (r['pendingItems'] as num?)?.toInt() ?? 0;
       }
     }
 

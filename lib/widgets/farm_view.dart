@@ -151,12 +151,53 @@ class _FarmViewState extends State<FarmView> with SingleTickerProviderStateMixin
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      PixelSprite(spriteId: _robotSprite(robot.state), size: min(gridSide * 0.25, 40), animPhase: _anim.value),
                       GestureDetector(
-                        onTap: () => showDialog(
-                          context: context,
-                          builder: (_) => RobotNameDialog(robot: robot, onChanged: () => gs.notify()),
+                        onTap: () {
+                          if (robot.sleepwalking || robot.pendingGold > 0) {
+                            // Find engine and wake up
+                            try {
+                              // Collect pending rewards directly
+                              if (robot.pendingGold > 0 || robot.pendingItems > 0) {
+                                gs.gold += robot.pendingGold;
+                                final mats = ['attackCrystal', 'defenseCore', 'speedChip'];
+                                for (int i = 0; i < robot.pendingItems; i++) {
+                                  final key = mats[i % mats.length];
+                                  gs.materials[key] = (gs.materials[key] ?? 0) + 1;
+                                }
+                                gs.notification = '${robot.name} 기상! +${robot.pendingGold}G +${robot.pendingItems}재료';
+                                gs.notificationTimer = 3;
+                                gs.floatingTexts.add(FloatingText(
+                                  text: '+${robot.pendingGold}G',
+                                  col: robot.x, row: robot.y, color: 0xFFFFD700));
+                              }
+                              robot.pendingGold = 0;
+                              robot.pendingItems = 0;
+                              robot.sleepwalking = false;
+                              robot.awakeSince = gs.time;
+                              gs.notify();
+                            } catch (_) {}
+                          } else {
+                            showDialog(context: context,
+                              builder: (_) => RobotNameDialog(robot: robot, onChanged: () => gs.notify()));
+                          }
+                        },
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            PixelSprite(
+                              spriteId: robot.sleepwalking ? 'robot_rest' : _robotSprite(robot.state),
+                              size: min(gridSide * 0.25, 40), animPhase: _anim.value),
+                            if (robot.sleepwalking)
+                              Text('💤 ${robot.pendingGold}G 쌓임',
+                                style: const TextStyle(color: Color(0xFFFF9800), fontSize: 8, fontWeight: FontWeight.bold))
+                            else
+                              const SizedBox.shrink(),
+                          ],
                         ),
+                      ),
+                      GestureDetector(
+                        onTap: () => showDialog(context: context,
+                          builder: (_) => RobotNameDialog(robot: robot, onChanged: () => gs.notify())),
                         child: Text(robot.name, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, decoration: TextDecoration.underline)),
                       ),
                       // Stamina

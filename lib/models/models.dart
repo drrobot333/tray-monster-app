@@ -101,6 +101,11 @@ class RobotState {
   double stamina = 100, maxStamina = 100;
   double stateTimer = 0, animTimer = 0;
   int animFrame = 0;
+  // Offline/sleepwalk system
+  double awakeSince = 0;     // game time when last clicked
+  bool sleepwalking = false;  // true = 50% efficiency
+  int pendingGold = 0;        // accumulated gold while sleepwalking
+  int pendingItems = 0;       // accumulated items while sleepwalking
   RobotState({this.name = '농장봇'});
 }
 
@@ -145,13 +150,16 @@ class IncubatingEgg {
 class BattleAllyState {
   String id, name, role;
   int hp, maxHp, atk, def, spd, cooldown;
+  double actionTimer; // time until next action (lower spd = longer wait)
+  int abilityCharges; // counts basic attacks before ability fires
   List<Map<String, dynamic>> buffs = [];
   List<Map<String, dynamic>> debuffs = [];
   bool alive;
   AbilityData ability;
   BattleAllyState({required this.id, required this.name, required this.role,
     required this.hp, required this.maxHp, required this.atk, required this.def,
-    required this.spd, this.cooldown = 0, this.alive = true, required this.ability});
+    required this.spd, this.cooldown = 0, this.alive = true, required this.ability,
+    this.actionTimer = 0, this.abilityCharges = 0});
 }
 
 class BattleState {
