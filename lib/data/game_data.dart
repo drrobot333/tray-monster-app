@@ -528,4 +528,34 @@ class GameData {
   static const Map<String, Map<String, num>> miningUpgrades = mining.miningUpgrades;
   static const Map<String, String> ingredientNames = cooking.ingredientNames;
   static const List<Recipe> recipes = cooking.recipes;
+
+  // Artifacts
+  static const List<ArtifactData> artifacts = [
+    ArtifactData(id: 'gold_charm', name: '황금 부적', emoji: '💰', effectType: 'goldMult'),
+    ArtifactData(id: 'war_sigil', name: '전사의 인장', emoji: '⚔', effectType: 'atkMult'),
+    ArtifactData(id: 'guardian_crest', name: '수호의 문장', emoji: '🛡', effectType: 'defMult'),
+    ArtifactData(id: 'gale_feather', name: '질풍의 깃털', emoji: '⚡', effectType: 'spdMult'),
+    ArtifactData(id: 'life_orb', name: '생명의 오브', emoji: '❤', effectType: 'hpMult'),
+    ArtifactData(id: 'growth_seed', name: '풍요의 씨앗', emoji: '🌱', effectType: 'growthMult'),
+    ArtifactData(id: 'hatch_charm', name: '번식의 부적', emoji: '🥚', effectType: 'hatchMult'),
+    ArtifactData(id: 'luck_crystal', name: '행운의 수정', emoji: '🔮', effectType: 'goldenMult'),
+  ];
+
+  static const List<ArtifactChestTier> chestTiers = [
+    ArtifactChestTier(id: 'wood', name: '나무 상자', goldCost: 1000, keyCost: 10,
+      goldW: 50, matW: 30, artifactW: 20,
+      rarityWeights: {'Newbie': 70, 'Normal': 25, 'Rookie': 5}),
+    ArtifactChestTier(id: 'iron', name: '철 상자', goldCost: 5000, keyCost: 30,
+      goldW: 40, matW: 30, artifactW: 30,
+      rarityWeights: {'Normal': 50, 'Rookie': 35, 'Legendary': 15}),
+    ArtifactChestTier(id: 'gold_chest', name: '황금 상자', goldCost: 20000, keyCost: 80,
+      goldW: 30, matW: 25, artifactW: 45,
+      rarityWeights: {'Rookie': 40, 'Legendary': 40, 'Mythic': 20}),
+    ArtifactChestTier(id: 'platinum', name: '백금 상자', goldCost: 60000, keyCost: 200,
+      goldW: 25, matW: 20, artifactW: 55,
+      rarityWeights: {'Rookie': 20, 'Legendary': 45, 'Mythic': 35}),
+    ArtifactChestTier(id: 'diamond_chest', name: '다이아 상자', goldCost: 150000, keyCost: 500,
+      goldW: 20, matW: 15, artifactW: 65,
+      rarityWeights: {'Legendary': 40, 'Mythic': 60}),
+  ];
 }

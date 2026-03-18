@@ -4,11 +4,19 @@ import 'package:provider/provider.dart';
 import '../models/game_state.dart';
 import '../services/game_engine.dart';
 import '../data/game_data.dart';
+import 'ability_tab.dart';
+import 'artifact_manage.dart';
 
-class UpgradeTab extends StatelessWidget {
+class UpgradeTab extends StatefulWidget {
   final GameEngine engine;
-
   const UpgradeTab({super.key, required this.engine});
+  @override
+  State<UpgradeTab> createState() => _UpgradeTabState();
+}
+
+class _UpgradeTabState extends State<UpgradeTab> {
+  int _subTab = 0;
+  GameEngine get engine => widget.engine;
 
   Color _rarityColor(String rarity) {
     switch (rarity) {
@@ -39,11 +47,11 @@ class UpgradeTab extends StatelessWidget {
   }
 
   int _allyUpgradeCost(int statLv) {
-    return (150 * pow(1.6, statLv)).floor();
+    return (200 * pow(1.8, statLv)).floor();
   }
 
   int _allyMatCost(int statLv) {
-    return (2 * pow(1.4, statLv)).floor();
+    return (2 * pow(1.5, statLv)).floor();
   }
 
   String _matKeyForStat(String stat) {
@@ -56,8 +64,51 @@ class UpgradeTab extends StatelessWidget {
     }
   }
 
+  Widget _subTabButton(int index, String label) {
+    final isActive = _subTab == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() { _subTab = index; }),
+        child: Container(
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isActive ? const Color(0xFF4CAF50).withValues(alpha: 0.15) : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+            border: isActive ? Border.all(color: const Color(0xFF4CAF50).withValues(alpha: 0.5)) : null,
+          ),
+          child: Text(label, style: TextStyle(
+            color: isActive ? const Color(0xFF4CAF50) : Colors.white54,
+            fontSize: 12, fontWeight: isActive ? FontWeight.bold : FontWeight.normal)),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    return Column(children: [
+      Container(
+        height: 36,
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0d1117), borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFF333333)),
+        ),
+        child: Row(children: [
+          _subTabButton(0, '⚔ 유닛'),
+          _subTabButton(1, '🔮 유물'),
+          _subTabButton(2, '⭐ 어빌리티'),
+        ]),
+      ),
+      Expanded(child: _subTab == 0
+        ? _buildUnitUpgrade(context)
+        : _subTab == 1
+          ? ArtifactManage(engine: engine)
+          : AbilityTab(engine: engine)),
+    ]);
+  }
+
+  Widget _buildUnitUpgrade(BuildContext context) {
     final gs = context.watch<GameState>();
 
     return SingleChildScrollView(
@@ -317,96 +368,6 @@ class UpgradeTab extends StatelessWidget {
                     ),
                   ],
                 ),
-              ),
-            );
-          }),
-
-          const SizedBox(height: 20),
-
-          // Skill shop section
-          _sectionHeader('\uD83D\uDCA1 \uC2A4\uD0AC \uC0F5'),
-          const SizedBox(height: 8),
-
-          ...GameData.skills.map((skill) {
-            final owned = gs.skills.contains(skill.id);
-            final canBuy = !owned && gs.gold >= skill.cost;
-            final requirementMet = skill.requires == null || gs.skills.contains(skill.requires);
-
-            return Card(
-              color: const Color(0xFF0d1117),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-                side: BorderSide(
-                  color: owned
-                      ? const Color(0xFF4CAF50)
-                      : const Color(0xFF333333),
-                ),
-              ),
-              child: ListTile(
-                leading: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: owned
-                        ? const Color(0xFF4CAF50).withValues(alpha: 0.2)
-                        : const Color(0xFF1a1a2e),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: owned
-                          ? const Color(0xFF4CAF50)
-                          : const Color(0xFF333333),
-                    ),
-                  ),
-                  child: Center(
-                    child: Icon(
-                      owned ? Icons.check : Icons.lock_open,
-                      color: owned ? const Color(0xFF4CAF50) : Colors.white38,
-                      size: 18,
-                    ),
-                  ),
-                ),
-                title: Text(
-                  skill.name,
-                  style: TextStyle(
-                    color: owned ? const Color(0xFF4CAF50) : Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      skill.desc,
-                      style: const TextStyle(color: Colors.white54, fontSize: 11),
-                    ),
-                    if (skill.requires != null && !requirementMet)
-                      Text(
-                        '\uD544\uC694: ${GameData.skills.where((s) => s.id == skill.requires).firstOrNull?.name ?? skill.requires}',
-                        style: const TextStyle(color: Color(0xFFFF5252), fontSize: 10),
-                      ),
-                  ],
-                ),
-                trailing: owned
-                    ? const Text(
-                        '\uBCF4\uC720',
-                        style: TextStyle(color: Color(0xFF4CAF50), fontSize: 11),
-                      )
-                    : ElevatedButton(
-                        onPressed: canBuy && requirementMet
-                            ? () => engine.buySkill(skill.id)
-                            : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: canBuy && requirementMet
-                              ? const Color(0xFF4CAF50)
-                              : const Color(0xFF333333),
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                        ),
-                        child: Text(
-                          '\uD83D\uDCB0${skill.cost}',
-                          style: const TextStyle(fontSize: 11),
-                        ),
-                      ),
               ),
             );
           }),

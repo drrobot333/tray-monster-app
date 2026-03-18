@@ -10,9 +10,9 @@ import '../widgets/workstation_tabs.dart';
 import '../widgets/battle_panel.dart';
 import '../widgets/mission_panel.dart';
 import '../widgets/bottom_nav.dart';
-import 'egg_tab.dart';
 import 'team_tab.dart';
 import 'cooking_tab.dart';
+import 'shop_tab.dart';
 import 'upgrade_tab.dart';
 import 'codex_tab.dart';
 
@@ -69,7 +69,7 @@ class _GameScreenState extends State<GameScreen> {
   Widget _buildTabOverlay() {
     switch (_currentTab) {
       case 1:
-        return EggTab(engine: _engine!);
+        return ShopTab(engine: _engine!);
       case 2:
         return TeamTab(engine: _engine!);
       case 3:

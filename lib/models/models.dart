@@ -329,3 +329,151 @@ class MarketPrice {
     recipeId: j['recipeId'] as String,
     multiplier: (j['multiplier'] ?? 1.0).toDouble());
 }
+
+// =========================================================================
+// ARTIFACTS
+// =========================================================================
+class ArtifactData {
+  final String id, name, emoji;
+  final String effectType; // goldMult, atkMult, defMult, spdMult, hpMult, growthMult, hatchMult, goldenMult
+  const ArtifactData({required this.id, required this.name, required this.emoji, required this.effectType});
+}
+
+class OwnedArtifact {
+  final String artifactId;
+  String rarity;
+  int level;
+  int duplicates; // collected for promotion
+
+  OwnedArtifact({required this.artifactId, this.rarity = 'Newbie', this.level = 1, this.duplicates = 0});
+
+  // Rarity-based effect per level
+  static const _effectPerLevel = {
+    'Newbie': 0.02, 'Normal': 0.03, 'Rookie': 0.05, 'Legendary': 0.08, 'Mythic': 0.12,
+  };
+  static const _maxLevel = {
+    'Newbie': 5, 'Normal': 8, 'Rookie': 12, 'Legendary': 15, 'Mythic': 20,
+  };
+  static const _promotionCost = {
+    'Newbie': 2, 'Normal': 3, 'Rookie': 4, 'Legendary': 5,
+  };
+
+  double get effectValue => level * (_effectPerLevel[rarity] ?? 0.02);
+  int get maxLevel => _maxLevel[rarity] ?? 5;
+  int? get promotionDuplicatesNeeded => _promotionCost[rarity]; // null = can't promote (Mythic)
+  String? get nextRarity {
+    const order = ['Newbie', 'Normal', 'Rookie', 'Legendary', 'Mythic'];
+    final idx = order.indexOf(rarity);
+    return idx < order.length - 1 ? order[idx + 1] : null;
+  }
+
+  Map<String, dynamic> toJson() => {
+    'artifactId': artifactId, 'rarity': rarity, 'level': level, 'duplicates': duplicates,
+  };
+  factory OwnedArtifact.fromJson(Map<String, dynamic> j) => OwnedArtifact(
+    artifactId: j['artifactId'] as String,
+    rarity: j['rarity'] as String? ?? 'Newbie',
+    level: (j['level'] as num?)?.toInt() ?? 1,
+    duplicates: (j['duplicates'] as num?)?.toInt() ?? 0,
+  );
+}
+
+// =========================================================================
+// ABILITY SYSTEM
+// =========================================================================
+class AbilityLine {
+  String grade;   // Common/Rare/Epic/Legendary
+  String optionId; // e.g. 'atk', 'gold', 'allStat'
+  int value;       // rolled value within range
+  bool locked;
+
+  AbilityLine({this.grade = 'Common', this.optionId = 'atk', this.value = 0, this.locked = false});
+
+  Map<String, dynamic> toJson() => {'grade': grade, 'optionId': optionId, 'value': value, 'locked': locked};
+  factory AbilityLine.fromJson(Map<String, dynamic> j) => AbilityLine(
+    grade: j['grade'] as String? ?? 'Common',
+    optionId: j['optionId'] as String? ?? 'atk',
+    value: (j['value'] as num?)?.toInt() ?? 0,
+    locked: j['locked'] ?? false,
+  );
+}
+
+class AbilityState {
+  String tier;  // Shared grade: Common/Rare/Epic/Legendary
+  int rerollCount; // shared rerolls at current tier
+  List<List<AbilityLine>> slots; // 5 slots, each with 3 lines
+  int activeSlot; // which slot is currently applied (0~4)
+  int viewingSlot; // which slot is being edited in UI (0~4)
+
+  static const int maxSlots = 5;
+
+  AbilityState({this.tier = 'Common', this.rerollCount = 0, List<List<AbilityLine>>? slots, this.activeSlot = 0, this.viewingSlot = 0})
+    : slots = slots ?? List.generate(maxSlots, (_) => [AbilityLine(), AbilityLine(), AbilityLine()]);
+
+  // Active slot's lines (for applying bonuses)
+  List<AbilityLine> get activeLines => slots[activeSlot];
+  // Currently viewed slot's lines (for UI/rerolling)
+  List<AbilityLine> get viewingLines => slots[viewingSlot];
+
+  static const tierOrder = ['Common', 'Rare', 'Epic', 'Legendary'];
+  static const promotionCost = {'Common': 100, 'Rare': 250, 'Epic': 500};
+  static const rerollCost = {'Common': 500, 'Rare': 2000, 'Epic': 8000, 'Legendary': 30000};
+
+  int get rerollGoldCost {
+    final base = rerollCost[tier] ?? 500;
+    final lockedCount = viewingLines.where((l) => l.locked).length;
+    if (lockedCount == 2) return base * 5;
+    if (lockedCount == 1) return base * 2;
+    return base;
+  }
+
+  int? get promotionRerollsNeeded => promotionCost[tier];
+  bool get canPromote {
+    final needed = promotionRerollsNeeded;
+    return needed != null && rerollCount >= needed;
+  }
+  String? get nextTier {
+    final idx = tierOrder.indexOf(tier);
+    return idx < tierOrder.length - 1 ? tierOrder[idx + 1] : null;
+  }
+
+  Map<String, dynamic> toJson() => {
+    'tier': tier, 'rerollCount': rerollCount, 'activeSlot': activeSlot,
+    'slots': slots.map((s) => s.map((l) => l.toJson()).toList()).toList(),
+  };
+  factory AbilityState.fromJson(Map<String, dynamic> j) {
+    // Migration: old format had 'lines', new has 'slots'
+    if (j.containsKey('slots') && j['slots'] is List) {
+      return AbilityState(
+        tier: j['tier'] as String? ?? 'Common',
+        rerollCount: (j['rerollCount'] as num?)?.toInt() ?? 0,
+        activeSlot: (j['activeSlot'] as num?)?.toInt() ?? 0,
+        slots: (j['slots'] as List<dynamic>).map((slot) =>
+          (slot as List<dynamic>).map((l) =>
+            AbilityLine.fromJson(Map<String, dynamic>.from(l as Map))).toList()).toList(),
+      );
+    }
+    // Old format migration
+    final oldLines = (j['lines'] as List<dynamic>?)
+      ?.map((l) => AbilityLine.fromJson(Map<String, dynamic>.from(l as Map)))
+      .toList() ?? [AbilityLine(), AbilityLine(), AbilityLine()];
+    final allSlots = List.generate(maxSlots, (i) =>
+      i == 0 ? oldLines : [AbilityLine(), AbilityLine(), AbilityLine()]);
+    return AbilityState(
+      tier: j['tier'] as String? ?? 'Common',
+      rerollCount: (j['rerollCount'] as num?)?.toInt() ?? 0,
+      slots: allSlots,
+    );
+  }
+}
+
+class ArtifactChestTier {
+  final String id, name;
+  final int goldCost, keyCost;
+  final int goldW, matW, artifactW; // weights
+  final Map<String, int> rarityWeights;
+  const ArtifactChestTier({required this.id, required this.name,
+    required this.goldCost, required this.keyCost,
+    required this.goldW, required this.matW, required this.artifactW,
+    required this.rarityWeights});
+}

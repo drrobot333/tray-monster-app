@@ -14,7 +14,7 @@ class BottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     const tabs = [
       ('\uD83C\uDF3E', '\uB18D\uC7A5'),
-      ('\uD83E\uDD5A', '\uC54C'),
+      ('\uD83D\uDECD', '\uC0C1\uC810'),
       ('\uD83D\uDC65', '\uD300'),
       ('\uD83C\uDF73', '\uC694\uB9AC'),
       ('\uD83D\uDCCA', '\uAC15\uD654'),

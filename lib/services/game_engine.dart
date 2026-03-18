@@ -295,7 +295,9 @@ class GameEngine {
     }
 
     // Apply codex gold bonus
-    goldEarned = (goldEarned * (1 + getCodexBonus()['goldMult']!)).floor();
+    final artBonus = getArtifactBonuses();
+    final abBonus = getAbilityBonuses();
+    goldEarned = (goldEarned * (1 + getCodexBonus()['goldMult']! + (artBonus['goldMult'] ?? 0) + (abBonus['gold'] ?? 0))).floor();
 
     // Sleepwalking: 50% gold, accumulate for later
     final eff = _robotEfficiency(state.robot);
@@ -644,7 +646,8 @@ class GameEngine {
     }
 
     state.gold -= eggData.cost;
-    final incTime = eggData.incubationTime * (hasSkill('fast_hatch') ? 0.7 : 1.0);
+    final hatchBonus = getArtifactBonuses()['hatchMult'] ?? 0;
+    final incTime = eggData.incubationTime * (hasSkill('fast_hatch') ? 0.7 : 1.0) * max(0.3, 1.0 - hatchBonus);
 
     state.eggs.add(IncubatingEgg(
       tier: tier,
@@ -668,7 +671,8 @@ class GameEngine {
       return;
     }
 
-    final incTime = eggData.incubationTime * (hasSkill('fast_hatch') ? 0.7 : 1.0);
+    final hatchBonus = getArtifactBonuses()['hatchMult'] ?? 0;
+    final incTime = eggData.incubationTime * (hasSkill('fast_hatch') ? 0.7 : 1.0) * max(0.3, 1.0 - hatchBonus);
 
     state.eggs.add(IncubatingEgg(
       tier: tier,
@@ -805,18 +809,26 @@ class GameEngine {
 
     battle.allyStates = state.team.map((idx) {
       final ally = state.allies[idx];
-      final codexAtkMult = 1 + getCodexBonus()['atkMult']!;
+      final codex = getCodexBonus();
+      final art = getArtifactBonuses();
+      final ab = getAbilityBonuses();
+      final allStat = ab['allStat'] ?? 0;
+      final atkMult = 1 + codex['atkMult']! + (art['atkMult'] ?? 0) + (ab['atk'] ?? 0) + allStat;
+      final defMult = 1 + (art['defMult'] ?? 0) + (ab['def'] ?? 0) + allStat;
+      final spdMult = 1 + (art['spdMult'] ?? 0) + (ab['spd'] ?? 0) + allStat;
+      final hpMult = 1 + (art['hpMult'] ?? 0) + (ab['hp'] ?? 0) + allStat;
+      final finalSpd = (ally.spd * spdMult).floor();
       return BattleAllyState(
         id: ally.id,
         name: ally.name,
         role: ally.role,
-        hp: ally.hp,
-        maxHp: ally.hp,
-        atk: (ally.atk * codexAtkMult).floor(),
-        def: ally.def,
-        spd: ally.spd,
+        hp: (ally.hp * hpMult).floor(),
+        maxHp: (ally.hp * hpMult).floor(),
+        atk: (ally.atk * atkMult).floor(),
+        def: (ally.def * defMult).floor(),
+        spd: finalSpd,
         ability: ally.ability,
-        actionTimer: 30.0 / max(1, ally.spd),
+        actionTimer: 30.0 / max(1, finalSpd),
       );
     }).toList();
   }
@@ -1253,6 +1265,11 @@ class GameEngine {
 
     state.gold += (drops.gold * mult).floor();
     state.materials['eggFragment'] = (state.materials['eggFragment'] ?? 0) + (drops.eggFragments * mult).floor();
+
+    // Key fragments from boss (scales with stage)
+    // Keys scale exponentially: stage 1=2, 5=10, 10=30, 15=60, 20=100
+    final keyDrop = (pow(stage, 1.5).floor() * mult).floor();
+    state.keyFragments += keyDrop;
 
     for (final mat in drops.materials) {
       final amount = (mat.amount * mult).floor();
@@ -2101,6 +2118,229 @@ class GameEngine {
       update(s);
       remaining -= s;
     }
+  }
+
+  // ============================================================
+  // ARTIFACTS
+  // ============================================================
+
+  // Get total artifact bonus for a given effect type
+  Map<String, double> getArtifactBonuses() {
+    final bonuses = <String, double>{};
+    for (final idx in state.equippedArtifacts) {
+      if (idx < 0 || idx >= state.ownedArtifacts.length) continue;
+      final art = state.ownedArtifacts[idx];
+      final data = GameData.artifacts.where((a) => a.id == art.artifactId).firstOrNull;
+      if (data == null) continue;
+      bonuses[data.effectType] = (bonuses[data.effectType] ?? 0) + art.effectValue;
+    }
+    return bonuses;
+  }
+
+  void openChest(String chestId, {bool useKeys = false}) {
+    final chest = GameData.chestTiers.where((c) => c.id == chestId).firstOrNull;
+    if (chest == null) return;
+
+    if (useKeys) {
+      if (state.keyFragments < chest.keyCost) { _notify('열쇠 부족!'); return; }
+      state.keyFragments -= chest.keyCost;
+    } else {
+      if (state.gold < chest.goldCost) { _notify('골드 부족!'); return; }
+      state.gold -= chest.goldCost;
+    }
+
+    final totalW = chest.goldW + chest.matW + chest.artifactW;
+    final roll = _rng.nextDouble() * totalW;
+
+    if (roll < chest.goldW) {
+      // Gold reward
+      final raw = chest.goldCost * (0.8 + _rng.nextDouble() * 0.7);
+      final amount = (raw / 100).floor() * 100;
+      state.gold += amount;
+      _notify('💰 ${amount}G 획득!');
+    } else if (roll < chest.goldW + chest.matW) {
+      // Material reward
+      final amount = 2 + _rng.nextInt(8);
+      final mats = ['attackCrystal', 'defenseCore', 'speedChip'];
+      final key = mats[_rng.nextInt(mats.length)];
+      state.materials[key] = (state.materials[key] ?? 0) + amount;
+      _notify('재료 x$amount 획득!');
+    } else {
+      // Artifact reward
+      final rarity = _weightedRandom(chest.rarityWeights);
+      final artifactData = GameData.artifacts[_rng.nextInt(GameData.artifacts.length)];
+
+      // Check if already owned with same rarity
+      final existing = state.ownedArtifacts.where(
+        (a) => a.artifactId == artifactData.id && a.rarity == rarity).firstOrNull;
+
+      if (existing != null) {
+        existing.duplicates++;
+        _notify('${artifactData.emoji} ${artifactData.name} ($rarity) 중복! +1');
+      } else {
+        state.ownedArtifacts.add(OwnedArtifact(artifactId: artifactData.id, rarity: rarity));
+        _notify('${artifactData.emoji} ${artifactData.name} ($rarity) 획득!');
+      }
+    }
+  }
+
+  void upgradeArtifact(int index) {
+    if (index < 0 || index >= state.ownedArtifacts.length) return;
+    final art = state.ownedArtifacts[index];
+    if (art.level >= art.maxLevel) { _notify('최대 레벨!'); return; }
+
+    final cost = (300 * pow(1.5, art.level - 1)).floor();
+    if (state.gold < cost) { _notify('골드 부족!'); return; }
+
+    state.gold -= cost;
+    art.level++;
+    final data = GameData.artifacts.where((a) => a.id == art.artifactId).firstOrNull;
+    _notify('${data?.emoji ?? '🔮'} 강화 Lv.${art.level}!');
+  }
+
+  void promoteArtifact(int index) {
+    if (index < 0 || index >= state.ownedArtifacts.length) return;
+    final art = state.ownedArtifacts[index];
+    final needed = art.promotionDuplicatesNeeded;
+    if (needed == null) { _notify('최고 등급!'); return; }
+    if (art.duplicates < needed) { _notify('중복 ${needed}개 필요! (${art.duplicates}/${needed})'); return; }
+
+    art.duplicates -= needed;
+    art.rarity = art.nextRarity!;
+    art.level = 1;
+    final data = GameData.artifacts.where((a) => a.id == art.artifactId).firstOrNull;
+    _notify('${data?.emoji ?? '🔮'} ${art.rarity}로 승급!');
+  }
+
+  void equipArtifact(int index) {
+    if (state.equippedArtifacts.contains(index)) {
+      state.equippedArtifacts.remove(index);
+    } else {
+      if (state.equippedArtifacts.length >= state.maxArtifactSlots) {
+        _notify('슬롯 가득! (${state.maxArtifactSlots}개)');
+        return;
+      }
+      state.equippedArtifacts.add(index);
+    }
+  }
+
+  // ============================================================
+  // ABILITY SYSTEM
+  // ============================================================
+
+  // Option pool: optionId → {name, grades → [min, max]}
+  static const _abilityOptions = {
+    'atk':        {'name': 'ATK', 'Common': [1,3], 'Rare': [4,8], 'Epic': [9,15], 'Legendary': [16,25]},
+    'def':        {'name': 'DEF', 'Common': [1,3], 'Rare': [4,8], 'Epic': [9,15], 'Legendary': [16,25]},
+    'spd':        {'name': 'SPD', 'Common': [1,3], 'Rare': [4,8], 'Epic': [9,15], 'Legendary': [16,25]},
+    'hp':         {'name': 'HP', 'Common': [1,3], 'Rare': [4,8], 'Epic': [9,15], 'Legendary': [16,25]},
+    'gold':       {'name': '골드 수입', 'Common': [1,3], 'Rare': [4,8], 'Epic': [9,15], 'Legendary': [16,25]},
+    'growth':     {'name': '성장속도', 'Common': [1,3], 'Rare': [4,8], 'Epic': [9,15], 'Legendary': [16,25]},
+    'golden':     {'name': '황금확률', 'Rare': [1,3], 'Epic': [4,8], 'Legendary': [9,15]},
+    'hatch':      {'name': '부화시간 감소', 'Rare': [1,3], 'Epic': [4,8], 'Legendary': [9,15]},
+    'bossDmg':    {'name': '보스 데미지', 'Epic': [3,8], 'Legendary': [9,20]},
+    'battleTime': {'name': '전투시간 +초', 'Epic': [3,5], 'Legendary': [6,10]},
+    'allStat':    {'name': '전 스탯', 'Legendary': [5,12]},
+    'costReduce': {'name': '강화비용 감소', 'Legendary': [5,15]},
+  };
+
+  // Grade probability per my tier
+  static const _gradeProb = {
+    'Common':    {'Common': 100},
+    'Rare':      {'Common': 70, 'Rare': 30},
+    'Epic':      {'Common': 50, 'Rare': 35, 'Epic': 15},
+    'Legendary': {'Common': 40, 'Rare': 30, 'Epic': 20, 'Legendary': 10},
+  };
+
+  AbilityLine _rollAbilityLine(String myTier) {
+    // 1. Roll grade
+    final probs = _gradeProb[myTier] ?? {'Common': 100};
+    final grade = _weightedRandom(probs.map((k, v) => MapEntry(k, v)));
+
+    // 2. Get available options for this grade
+    final available = <String>[];
+    for (final entry in _abilityOptions.entries) {
+      if (entry.value.containsKey(grade)) available.add(entry.key);
+    }
+    if (available.isEmpty) available.add('atk');
+
+    // 3. Pick random option
+    final optionId = available[_rng.nextInt(available.length)];
+
+    // 4. Roll value within range (uniform)
+    final range = _abilityOptions[optionId]![grade] as List<dynamic>;
+    final minVal = (range[0] as int);
+    final maxVal = (range[1] as int);
+    final value = minVal + _rng.nextInt(maxVal - minVal + 1);
+
+    return AbilityLine(grade: grade, optionId: optionId, value: value);
+  }
+
+  void rerollAbility() {
+    final ab = state.ability;
+    if (state.gold < ab.rerollGoldCost) {
+      _notify('골드 부족! (${ab.rerollGoldCost}G)');
+      return;
+    }
+
+    state.gold -= ab.rerollGoldCost;
+    ab.rerollCount++;
+
+    for (int i = 0; i < 3; i++) {
+      if (!ab.viewingLines[i].locked) {
+        ab.viewingLines[i] = _rollAbilityLine(ab.tier);
+      }
+    }
+    _notify('어빌리티 리롤! (${ab.rerollCount}회)');
+  }
+
+  void toggleAbilityLock(int lineIndex) {
+    if (lineIndex < 0 || lineIndex >= 3) return;
+    final lockedCount = state.ability.viewingLines.where((l) => l.locked).length;
+    if (!state.ability.viewingLines[lineIndex].locked && lockedCount >= 2) {
+      _notify('최대 2줄까지 잠금!');
+      return;
+    }
+    state.ability.viewingLines[lineIndex].locked = !state.ability.viewingLines[lineIndex].locked;
+  }
+
+  void promoteAbility() {
+    final ab = state.ability;
+    if (!ab.canPromote) {
+      _notify('리롤 ${ab.promotionRerollsNeeded}회 필요! (${ab.rerollCount}회)');
+      return;
+    }
+    final next = ab.nextTier;
+    if (next == null) { _notify('최고 등급!'); return; }
+
+    ab.rerollCount = 0;
+    ab.tier = next;
+    _notify('어빌리티 등급 승급! → $next');
+  }
+
+  void activateAbilitySlot(int slot) {
+    if (slot < 0 || slot >= AbilityState.maxSlots) return;
+    state.ability.activeSlot = slot;
+    _notify('어빌리티 ${slot + 1}번 슬롯 적용!');
+  }
+
+  void viewAbilitySlot(int slot) {
+    if (slot < 0 || slot >= AbilityState.maxSlots) return;
+    state.ability.viewingSlot = slot;
+  }
+
+  // Get total ability bonuses (for applying to game systems)
+  Map<String, double> getAbilityBonuses() {
+    final bonuses = <String, double>{};
+    for (final line in state.ability.activeLines) {
+      final key = line.optionId;
+      bonuses[key] = (bonuses[key] ?? 0) + line.value / 100.0;
+    }
+    return bonuses;
+  }
+
+  String abilityOptionName(String optionId) {
+    return (_abilityOptions[optionId]?['name'] as String?) ?? optionId;
   }
 
   // ============================================================

@@ -260,13 +260,23 @@ class TeamTab extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-                                _statChip('\u2694', '${ally.atk}', const Color(0xFFFF5252)),
-                                const SizedBox(width: 6),
-                                _statChip('\uD83D\uDEE1', '${ally.def}', const Color(0xFF2196F3)),
-                                const SizedBox(width: 6),
-                                _statChip('\u26A1', '${ally.spd}', const Color(0xFFFFD700)),
-                                const SizedBox(width: 6),
-                                _statChip('\u2764', '${ally.hp}', const Color(0xFF4CAF50)),
+                                Builder(builder: (_) {
+                                  final art = engine.getArtifactBonuses();
+                                  final codex = engine.getCodexBonus();
+                                  final atkBonus = ((ally.atk * (codex['atkMult']! + (art['atkMult'] ?? 0)))).floor();
+                                  final defBonus = ((ally.def * (art['defMult'] ?? 0))).floor();
+                                  final spdBonus = ((ally.spd * (art['spdMult'] ?? 0))).floor();
+                                  final hpBonus = ((ally.hp * (art['hpMult'] ?? 0))).floor();
+                                  return Row(children: [
+                                    _statChipWithBonus('\u2694', ally.atk, atkBonus, const Color(0xFFFF5252)),
+                                    const SizedBox(width: 4),
+                                    _statChipWithBonus('\uD83D\uDEE1', ally.def, defBonus, const Color(0xFF2196F3)),
+                                    const SizedBox(width: 4),
+                                    _statChipWithBonus('\u26A1', ally.spd, spdBonus, const Color(0xFFFFD700)),
+                                    const SizedBox(width: 4),
+                                    _statChipWithBonus('\u2764', ally.hp, hpBonus, const Color(0xFF4CAF50)),
+                                  ]);
+                                }),
                               ],
                             ),
                           ),
@@ -292,6 +302,19 @@ class TeamTab extends StatelessWidget {
         Text(icon, style: TextStyle(fontSize: 10, color: color)),
         const SizedBox(width: 2),
         Text(value, style: TextStyle(color: color, fontSize: 10)),
+      ],
+    );
+  }
+
+  Widget _statChipWithBonus(String icon, int base, int bonus, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(icon, style: TextStyle(fontSize: 10, color: color)),
+        const SizedBox(width: 2),
+        Text('$base', style: TextStyle(color: color, fontSize: 10)),
+        if (bonus > 0)
+          Text('(+$bonus)', style: const TextStyle(color: Color(0xFF4CAF50), fontSize: 8)),
       ],
     );
   }

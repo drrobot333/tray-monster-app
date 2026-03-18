@@ -74,6 +74,15 @@ class GameState extends ChangeNotifier {
   // ── Skills ──
   Set<String> skills = {};
 
+  // ── Ability ──
+  AbilityState ability = AbilityState();
+
+  // ── Artifacts ──
+  List<OwnedArtifact> ownedArtifacts = [];
+  List<int> equippedArtifacts = []; // indices into ownedArtifacts (max 2~4)
+  int maxArtifactSlots = 2;
+  int keyFragments = 0;
+
   // ── Codex ──
   List<String> codexAllies = [];
   List<String> codexCrops = [];
@@ -263,6 +272,13 @@ class GameState extends ChangeNotifier {
           'lastResetDay': lastMissionResetDay,
         },
         'skills': skills.toList(),
+        'ability': ability.toJson(),
+        'artifacts': {
+          'owned': ownedArtifacts.map((a) => a.toJson()).toList(),
+          'equipped': equippedArtifacts,
+          'maxSlots': maxArtifactSlots,
+          'keyFragments': keyFragments,
+        },
         'time': time,
       };
 
@@ -477,6 +493,26 @@ class GameState extends ChangeNotifier {
     }
     if (skills.contains('egg_slot_4')) {
       maxEggSlots = maxEggSlots < 4 ? 4 : maxEggSlots;
+    }
+
+    // ── Ability ──
+    if (data['ability'] is Map) {
+      ability = AbilityState.fromJson(Map<String, dynamic>.from(data['ability'] as Map));
+    }
+
+    // ── Artifacts ──
+    if (data['artifacts'] is Map) {
+      final a = Map<String, dynamic>.from(data['artifacts'] as Map);
+      if (a['owned'] is List) {
+        ownedArtifacts = (a['owned'] as List<dynamic>)
+            .map((x) => OwnedArtifact.fromJson(Map<String, dynamic>.from(x as Map)))
+            .toList();
+      }
+      if (a['equipped'] is List) {
+        equippedArtifacts = (a['equipped'] as List<dynamic>).map((x) => (x as num).toInt()).toList();
+      }
+      maxArtifactSlots = (a['maxSlots'] as num?)?.toInt() ?? 2;
+      keyFragments = (a['keyFragments'] as num?)?.toInt() ?? 0;
     }
 
     time = (data['time'] as num?)?.toDouble() ?? 0.0;
