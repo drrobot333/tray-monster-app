@@ -38,12 +38,12 @@ class UpgradeTab extends StatelessWidget {
     return ((data['baseCost'] as num) * pow((data['costMult'] as num), level)).floor();
   }
 
-  int _allyUpgradeCost(int level) {
-    return (100 * pow(1.5, level - 1)).floor();
+  int _allyUpgradeCost(int statLv) {
+    return (150 * pow(1.6, statLv)).floor();
   }
 
-  int _allyMatCost(int level) {
-    return (3 * pow(1.3, level - 1)).floor();
+  int _allyMatCost(int statLv) {
+    return (2 * pow(1.4, statLv)).floor();
   }
 
   String _matKeyForStat(String stat) {
@@ -250,8 +250,7 @@ class UpgradeTab extends StatelessWidget {
           ...gs.allies.asMap().entries.map((entry) {
             final allyIndex = entry.key;
             final ally = entry.value;
-            final upgradeCost = _allyUpgradeCost(ally.level);
-            final matCost = _allyMatCost(ally.level);
+            // costs are per-stat now
             return Card(
               color: const Color(0xFF0d1117),
               shape: RoundedRectangleBorder(
@@ -285,33 +284,33 @@ class UpgradeTab extends StatelessWidget {
                       children: [
                         _allyStatButton(
                           context, gs: gs,
-                          icon: '\u2694', label: '공격', value: '${ally.baseAtk}',
+                          icon: '\u2694', label: '공격', value: '${ally.atk}',
                           color: const Color(0xFFFF5252),
-                          cost: upgradeCost, matCost: matCost, stat: 'atk',
+                          cost: _allyUpgradeCost(ally.atkLevel), matCost: _allyMatCost(ally.atkLevel), stat: 'atk',
                           onUpgrade: () => engine.upgradeAlly(allyIndex, 'atk'),
                         ),
                         const SizedBox(width: 6),
                         _allyStatButton(
                           context, gs: gs,
-                          icon: '\uD83D\uDEE1', label: '방어', value: '${ally.baseDef}',
+                          icon: '\uD83D\uDEE1', label: '방어', value: '${ally.def}',
                           color: const Color(0xFF2196F3),
-                          cost: upgradeCost, matCost: matCost, stat: 'def',
+                          cost: _allyUpgradeCost(ally.defLevel), matCost: _allyMatCost(ally.defLevel), stat: 'def',
                           onUpgrade: () => engine.upgradeAlly(allyIndex, 'def'),
                         ),
                         const SizedBox(width: 6),
                         _allyStatButton(
                           context, gs: gs,
-                          icon: '\u26A1', label: '속도', value: '${ally.baseSpd}',
+                          icon: '\u26A1', label: '속도', value: '${ally.spd}',
                           color: const Color(0xFFFFD700),
-                          cost: upgradeCost, matCost: matCost, stat: 'spd',
+                          cost: _allyUpgradeCost(ally.spdLevel), matCost: _allyMatCost(ally.spdLevel), stat: 'spd',
                           onUpgrade: () => engine.upgradeAlly(allyIndex, 'spd'),
                         ),
                         const SizedBox(width: 6),
                         _allyStatButton(
                           context, gs: gs,
-                          icon: '\u2764', label: 'HP', value: '${ally.baseHp}',
+                          icon: '\u2764', label: 'HP', value: '${ally.hp}',
                           color: const Color(0xFF4CAF50),
-                          cost: upgradeCost, matCost: matCost, stat: 'hp',
+                          cost: _allyUpgradeCost(ally.hpLevel), matCost: _allyMatCost(ally.hpLevel), stat: 'hp',
                           onUpgrade: () => engine.upgradeAlly(allyIndex, 'hp'),
                         ),
                       ],

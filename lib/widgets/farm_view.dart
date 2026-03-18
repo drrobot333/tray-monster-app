@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/game_state.dart';
 import '../models/models.dart';
+import '../data/game_data.dart';
 import 'crop_picker_dialog.dart';
 import 'robot_name_dialog.dart';
 import 'sprite_widget.dart';
@@ -241,6 +242,15 @@ class _FarmViewState extends State<FarmView> with SingleTickerProviderStateMixin
     );
   }
 
+  String _cropName(String cropId) {
+    return GameData.crops.where((c) => c.id == cropId).firstOrNull?.name ?? cropId;
+  }
+
+  String _cropShort(String cropId) {
+    final name = _cropName(cropId);
+    return name.length > 4 ? name.substring(0, 4) : name;
+  }
+
   Widget _tile(BuildContext ctx, FarmTile tile, int r, int c, double size) {
     return GestureDetector(
       onTap: () => showDialog(context: ctx, builder: (_) => CropPickerDialog(tileRow: r, tileCol: c)),
@@ -265,9 +275,19 @@ class _FarmViewState extends State<FarmView> with SingleTickerProviderStateMixin
                       tile.growthProgress >= 1.0 ? const Color(0xFFFFD700) : const Color(0xFF4CAF50))),
                 )),
               ])),
-            if (tile.crop == null)
-              Center(child: Text(tile.assignedCrop != null ? '📌' : '+',
-                style: TextStyle(color: tile.assignedCrop != null ? Colors.white54 : Colors.white24, fontSize: 14))),
+            if (tile.crop == null && tile.assignedCrop == null)
+              const Center(child: Text('+', style: TextStyle(color: Colors.white24, fontSize: 14))),
+            if (tile.crop == null && tile.assignedCrop != null)
+              Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                const Text('📌', style: TextStyle(fontSize: 14)),
+                Text(_cropName(tile.assignedCrop!),
+                  style: const TextStyle(color: Colors.white54, fontSize: 9, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+              ])),
+            // Assigned crop label (when crop is growing)
+            if (tile.assignedCrop != null && tile.crop != null)
+              Positioned(left: 1, bottom: 1,
+                child: Text('📌${_cropShort(tile.assignedCrop!)}',
+                  style: const TextStyle(color: Colors.white54, fontSize: 8, fontWeight: FontWeight.bold))),
             if (tile.watered) const Positioned(left: 1, top: 1, child: Text('💧', style: TextStyle(fontSize: 7))),
             if (tile.growthProgress >= 1.0) const Positioned(right: 1, bottom: 1, child: Text('✅', style: TextStyle(fontSize: 7))),
           ],

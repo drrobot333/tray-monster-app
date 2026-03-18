@@ -26,7 +26,7 @@ const List<CropData> _crops = [
   CropData(id: 'crystal_berry', name: '크리스탈베리', category: 'combat', growTime: 100, value: 0, unlockStage: 10, drops: [Drop('random_material', 3)]),
 
   // --- RARE CROPS ---
-  CropData(id: 'lucky_clover', name: '행운클로버', category: 'rare', growTime: 50, value: 50, unlockStage: 3, drops: [Drop('golden_boost', 1)]),
+  CropData(id: 'lucky_clover', name: '행운클로버', category: 'rare', growTime: 50, value: 5, unlockStage: 3, drops: []),
   CropData(id: 'starfruit', name: '별열매', category: 'rare', growTime: 120, value: 100, unlockStage: 8, drops: [Drop('Egg Fragment', 3)]),
   CropData(id: 'moon_blossom', name: '달꽃', category: 'rare', growTime: 120, value: 80, unlockStage: 10, drops: [Drop('Mutagen', 3)]),
   CropData(id: 'sunstone_fruit', name: '태양석과일', category: 'rare', growTime: 100, value: 120, unlockStage: 12, drops: []),
@@ -272,21 +272,21 @@ const List<AllyData> _allies = [
 // =========================================================================
 const List<BossData> _bosses = [
   BossData(
-    id: 'boss_slime_king', name: 'Slime King', stage: 1, hp: 1800, atk: 57, def: 8, spd: 12,
+    id: 'boss_slime_king', name: 'Slime King', stage: 1, hp: 1980, atk: 59, def: 8, spd: 12,
     abilities: [
       BossAbility(name: 'Goo Slam', cooldown: 3, effect: {'type': 'damage', 'target': 'single', 'multiplier': 1.2}),
     ],
     drops: BossDrops(gold: 100, eggFragments: 0, materials: [Drop('Attack Crystal', 1)]),
   ),
   BossData(
-    id: 'boss_fungal_horror', name: 'Fungal Horror', stage: 2, hp: 3000, atk: 81, def: 15, spd: 14,
+    id: 'boss_fungal_horror', name: 'Fungal Horror', stage: 2, hp: 3600, atk: 89, def: 15, spd: 14,
     abilities: [
       BossAbility(name: 'Spore Cloud', cooldown: 5, effect: {'type': 'dot', 'target': 'single_enemy', 'damagePercent': 0.03, 'duration': 3}),
     ],
     drops: BossDrops(gold: 200, eggFragments: 0, materials: [Drop('Mutagen', 1)]),
   ),
   BossData(
-    id: 'boss_ember_wolf', name: 'Ember Wolf', stage: 3, hp: 4500, atk: 104, def: 22, spd: 24,
+    id: 'boss_ember_wolf', name: 'Ember Wolf', stage: 3, hp: 5850, atk: 119, def: 22, spd: 24,
     abilities: [
       BossAbility(name: 'Flame Charge', cooldown: 3, effect: {'type': 'damage', 'target': 'single', 'multiplier': 1.5}),
       BossAbility(name: 'Howl', cooldown: 5, effect: {'type': 'buff', 'target': 'single_ally', 'stat': 'atk', 'amount': 0.15, 'duration': 2}),
@@ -294,7 +294,7 @@ const List<BossData> _bosses = [
     drops: BossDrops(gold: 350, eggFragments: 1, materials: [Drop('Attack Crystal', 2)]),
   ),
   BossData(
-    id: 'boss_stone_sentinel', name: 'Stone Sentinel', stage: 4, hp: 6600, atk: 127, def: 30, spd: 16,
+    id: 'boss_stone_sentinel', name: 'Stone Sentinel', stage: 4, hp: 9240, atk: 152, def: 30, spd: 16,
     abilities: [
       BossAbility(name: 'Earthquake', cooldown: 5, effect: {'type': 'damage', 'target': 'all_enemies', 'multiplier': 1.0}),
       BossAbility(name: 'Stone Skin', cooldown: 6, effect: {'type': 'buff', 'target': 'single_ally', 'stat': 'def', 'amount': 0.30, 'duration': 2}),
@@ -302,7 +302,7 @@ const List<BossData> _bosses = [
     drops: BossDrops(gold: 500, eggFragments: 1, materials: [Drop('Defense Core', 3)]),
   ),
   BossData(
-    id: 'boss_frost_serpent', name: 'Frost Serpent', stage: 5, hp: 9000, atk: 151, def: 35, spd: 28,
+    id: 'boss_frost_serpent', name: 'Frost Serpent', stage: 5, hp: 13500, atk: 188, def: 35, spd: 28,
     abilities: [
       BossAbility(name: 'Ice Fang', cooldown: 3, effect: {'type': 'damage', 'target': 'single', 'multiplier': 1.6}),
       BossAbility(name: 'Blizzard Coil', cooldown: 5, effect: {'type': 'debuff', 'target': 'all_enemies', 'stat': 'spd', 'amount': 0.15, 'duration': 2}),
@@ -310,7 +310,7 @@ const List<BossData> _bosses = [
     drops: BossDrops(gold: 700, eggFragments: 1, materials: [Drop('Speed Chip', 3)]),
   ),
   BossData(
-    id: 'boss_shadow_spider', name: 'Shadow Spider', stage: 6, hp: 12000, atk: 174, def: 40, spd: 32,
+    id: 'boss_shadow_spider', name: 'Shadow Spider', stage: 6, hp: 19200, atk: 226, def: 40, spd: 32,
     abilities: [
       BossAbility(name: 'Venom Strike', cooldown: 4, effect: {'type': 'dot', 'target': 'single_enemy', 'damagePercent': 0.05, 'duration': 3}),
       BossAbility(name: 'Web Trap', cooldown: 4, effect: {'type': 'debuff', 'target': 'single_enemy', 'stat': 'spd', 'amount': 0.30, 'duration': 2}),
@@ -318,7 +318,7 @@ const List<BossData> _bosses = [
     drops: BossDrops(gold: 900, eggFragments: 1, materials: [Drop('Attack Crystal', 2), Drop('Mutagen', 2)]),
   ),
   BossData(
-    id: 'boss_thunder_bear', name: 'Thunder Bear', stage: 7, hp: 16500, atk: 198, def: 45, spd: 26,
+    id: 'boss_thunder_bear', name: 'Thunder Bear', stage: 7, hp: 28050, atk: 267, def: 45, spd: 26,
     abilities: [
       BossAbility(name: 'Lightning Maul', cooldown: 3, effect: {'type': 'damage', 'target': 'single', 'multiplier': 1.8}),
       BossAbility(name: 'Thunder Roar', cooldown: 5, effect: {'type': 'debuff', 'target': 'all_enemies', 'stat': 'def', 'amount': 0.15, 'duration': 2}),
@@ -326,7 +326,7 @@ const List<BossData> _bosses = [
     drops: BossDrops(gold: 1200, eggFragments: 2, materials: [Drop('Attack Crystal', 4)]),
   ),
   BossData(
-    id: 'boss_crystal_hydra', name: 'Crystal Hydra', stage: 8, hp: 21000, atk: 221, def: 50, spd: 24,
+    id: 'boss_crystal_hydra', name: 'Crystal Hydra', stage: 8, hp: 37800, atk: 309, def: 50, spd: 24,
     abilities: [
       BossAbility(name: 'Triple Head Strike', cooldown: 4, effect: {'type': 'multi_hit', 'target': 'random_enemies', 'hits': 3, 'multiplier': 0.8}),
       BossAbility(name: 'Regenerate', cooldown: 6, effect: {'type': 'heal', 'target': 'lowest_ally', 'amount': 0.10}),
@@ -334,7 +334,7 @@ const List<BossData> _bosses = [
     drops: BossDrops(gold: 1500, eggFragments: 2, materials: [Drop('Defense Core', 3), Drop('Attack Crystal', 3)]),
   ),
   BossData(
-    id: 'boss_sand_worm', name: 'Sand Worm', stage: 9, hp: 27000, atk: 244, def: 55, spd: 20,
+    id: 'boss_sand_worm', name: 'Sand Worm', stage: 9, hp: 51300, atk: 353, def: 55, spd: 20,
     abilities: [
       BossAbility(name: 'Burrow Strike', cooldown: 4, effect: {'type': 'damage', 'target': 'single', 'multiplier': 2.0}),
       BossAbility(name: 'Sand Storm', cooldown: 5, effect: {'type': 'damage', 'target': 'all_enemies', 'multiplier': 0.8}),
@@ -342,7 +342,7 @@ const List<BossData> _bosses = [
     drops: BossDrops(gold: 1800, eggFragments: 2, materials: [Drop('Speed Chip', 4)]),
   ),
   BossData(
-    id: 'boss_necro_bloom', name: 'Necro Bloom', stage: 10, hp: 36000, atk: 268, def: 60, spd: 28,
+    id: 'boss_necro_bloom', name: 'Necro Bloom', stage: 10, hp: 72000, atk: 402, def: 60, spd: 28,
     abilities: [
       BossAbility(name: 'Death Blossom', cooldown: 5, effect: {'type': 'damage', 'target': 'all_enemies', 'multiplier': 1.3}),
       BossAbility(name: 'Life Drain', cooldown: 4, effect: {'type': 'damage', 'target': 'single', 'multiplier': 1.5}),
@@ -350,7 +350,7 @@ const List<BossData> _bosses = [
     drops: BossDrops(gold: 2500, eggFragments: 3, materials: [Drop('Mutagen', 5), Drop('Attack Crystal', 3)], special: 'bronze_egg'),
   ),
   BossData(
-    id: 'boss_iron_colossus', name: 'Iron Colossus', stage: 11, hp: 45000, atk: 291, def: 65, spd: 18,
+    id: 'boss_iron_colossus', name: 'Iron Colossus', stage: 11, hp: 94500, atk: 451, def: 65, spd: 18,
     abilities: [
       BossAbility(name: 'Iron Fist', cooldown: 4, effect: {'type': 'damage', 'target': 'single', 'multiplier': 2.2}),
       BossAbility(name: 'Armor Plating', cooldown: 6, effect: {'type': 'buff', 'target': 'single_ally', 'stat': 'def', 'amount': 0.40, 'duration': 2}),
@@ -358,7 +358,7 @@ const List<BossData> _bosses = [
     drops: BossDrops(gold: 3000, eggFragments: 3, materials: [Drop('Defense Core', 6)]),
   ),
   BossData(
-    id: 'boss_plague_wraith', name: 'Plague Wraith', stage: 12, hp: 54000, atk: 315, def: 72, spd: 32,
+    id: 'boss_plague_wraith', name: 'Plague Wraith', stage: 12, hp: 118800, atk: 504, def: 72, spd: 32,
     abilities: [
       BossAbility(name: 'Pandemic', cooldown: 6, effect: {'type': 'dot', 'target': 'single_enemy', 'damagePercent': 0.04, 'duration': 4}),
       BossAbility(name: 'Soul Rip', cooldown: 3, effect: {'type': 'damage', 'target': 'single', 'multiplier': 1.7}),
@@ -366,7 +366,7 @@ const List<BossData> _bosses = [
     drops: BossDrops(gold: 3500, eggFragments: 3, materials: [Drop('Mutagen', 5), Drop('Speed Chip', 4)]),
   ),
   BossData(
-    id: 'boss_magma_titan', name: 'Magma Titan', stage: 13, hp: 66000, atk: 345, def: 80, spd: 22,
+    id: 'boss_magma_titan', name: 'Magma Titan', stage: 13, hp: 151800, atk: 569, def: 80, spd: 22,
     abilities: [
       BossAbility(name: 'Eruption', cooldown: 5, effect: {'type': 'damage', 'target': 'all_enemies', 'multiplier': 1.4}),
       BossAbility(name: 'Molten Core', cooldown: 6, effect: {'type': 'buff', 'target': 'single_ally', 'stat': 'atk', 'amount': 0.25, 'duration': 3}),
@@ -374,7 +374,7 @@ const List<BossData> _bosses = [
     drops: BossDrops(gold: 4200, eggFragments: 4, materials: [Drop('Attack Crystal', 6)]),
   ),
   BossData(
-    id: 'boss_storm_leviathan', name: 'Storm Leviathan', stage: 14, hp: 81000, atk: 374, def: 88, spd: 36,
+    id: 'boss_storm_leviathan', name: 'Storm Leviathan', stage: 14, hp: 194400, atk: 635, def: 88, spd: 36,
     abilities: [
       BossAbility(name: 'Tidal Surge', cooldown: 5, effect: {'type': 'damage', 'target': 'all_enemies', 'multiplier': 1.6}),
       BossAbility(name: 'Lightning Barrage', cooldown: 4, effect: {'type': 'multi_hit', 'target': 'random_enemies', 'hits': 4, 'multiplier': 0.7}),
@@ -382,7 +382,7 @@ const List<BossData> _bosses = [
     drops: BossDrops(gold: 5000, eggFragments: 4, materials: [Drop('Speed Chip', 5), Drop('Attack Crystal', 5)], special: 'silver_egg'),
   ),
   BossData(
-    id: 'boss_void_knight', name: 'Void Knight', stage: 15, hp: 99000, atk: 408, def: 95, spd: 34,
+    id: 'boss_void_knight', name: 'Void Knight', stage: 15, hp: 247500, atk: 714, def: 95, spd: 34,
     abilities: [
       BossAbility(name: 'Void Slash', cooldown: 3, effect: {'type': 'damage', 'target': 'single', 'multiplier': 2.0}),
       BossAbility(name: 'Dark Aura', cooldown: 6, effect: {'type': 'debuff', 'target': 'all_enemies', 'stat': 'atk', 'amount': 0.15, 'duration': 3}),
@@ -390,7 +390,7 @@ const List<BossData> _bosses = [
     drops: BossDrops(gold: 6000, eggFragments: 4, materials: [Drop('Defense Core', 6), Drop('Mutagen', 4)]),
   ),
   BossData(
-    id: 'boss_ancient_treant', name: 'Ancient Treant', stage: 16, hp: 120000, atk: 444, def: 105, spd: 20,
+    id: 'boss_ancient_treant', name: 'Ancient Treant', stage: 16, hp: 312000, atk: 799, def: 105, spd: 20,
     abilities: [
       BossAbility(name: 'Root Prison', cooldown: 6, effect: {'type': 'debuff', 'target': 'all_enemies', 'stat': 'spd', 'amount': 0.25, 'duration': 3}),
       BossAbility(name: 'Nature Wrath', cooldown: 6, effect: {'type': 'damage', 'target': 'all_enemies', 'multiplier': 1.8}),
@@ -399,7 +399,7 @@ const List<BossData> _bosses = [
     drops: BossDrops(gold: 7000, eggFragments: 5, materials: [Drop('Attack Crystal', 6), Drop('Defense Core', 6)]),
   ),
   BossData(
-    id: 'boss_demon_general', name: 'Demon General', stage: 17, hp: 150000, atk: 491, def: 115, spd: 38,
+    id: 'boss_demon_general', name: 'Demon General', stage: 17, hp: 405000, atk: 908, def: 115, spd: 38,
     abilities: [
       BossAbility(name: 'Hellfire Blade', cooldown: 3, effect: {'type': 'damage', 'target': 'single', 'multiplier': 2.2}),
       BossAbility(name: 'Infernal Command', cooldown: 5, effect: {'type': 'buff', 'target': 'single_ally', 'stat': 'atk', 'amount': 0.30, 'duration': 3}),
@@ -408,7 +408,7 @@ const List<BossData> _bosses = [
     drops: BossDrops(gold: 8500, eggFragments: 5, materials: [Drop('Attack Crystal', 8), Drop('Mutagen', 5)]),
   ),
   BossData(
-    id: 'boss_celestial_warden', name: 'Celestial Warden', stage: 18, hp: 186000, atk: 538, def: 128, spd: 40,
+    id: 'boss_celestial_warden', name: 'Celestial Warden', stage: 18, hp: 520799, atk: 1022, def: 128, spd: 40,
     abilities: [
       BossAbility(name: 'Holy Judgment', cooldown: 6, effect: {'type': 'damage', 'target': 'all_enemies', 'multiplier': 2.0}),
       BossAbility(name: 'Divine Shield', cooldown: 7, effect: {'type': 'shield', 'target': 'self', 'duration': 2}),
@@ -417,7 +417,7 @@ const List<BossData> _bosses = [
     drops: BossDrops(gold: 10000, eggFragments: 5, materials: [Drop('Defense Core', 8), Drop('Speed Chip', 6)]),
   ),
   BossData(
-    id: 'boss_chaos_dragon', name: 'Chaos Dragon', stage: 19, hp: 234000, atk: 595, def: 142, spd: 44,
+    id: 'boss_chaos_dragon', name: 'Chaos Dragon', stage: 19, hp: 678600, atk: 1160, def: 142, spd: 44,
     abilities: [
       BossAbility(name: 'Chaos Breath', cooldown: 5, effect: {'type': 'damage', 'target': 'all_enemies', 'multiplier': 1.8}),
       BossAbility(name: 'Tail Sweep', cooldown: 4, effect: {'type': 'multi_hit', 'target': 'random_enemies', 'hits': 5, 'multiplier': 0.6}),
@@ -426,7 +426,7 @@ const List<BossData> _bosses = [
     drops: BossDrops(gold: 12000, eggFragments: 6, materials: [Drop('Attack Crystal', 10), Drop('Defense Core', 8), Drop('Mutagen', 6)], special: 'gold_egg'),
   ),
   BossData(
-    id: 'boss_world_ender', name: 'World Ender', stage: 20, hp: 300000, atk: 655, def: 160, spd: 48,
+    id: 'boss_world_ender', name: 'World Ender', stage: 20, hp: 900000, atk: 1310, def: 160, spd: 48,
     abilities: [
       BossAbility(name: 'Apocalypse', cooldown: 6, effect: {'type': 'damage', 'target': 'all_enemies', 'multiplier': 2.0}),
       BossAbility(name: 'Dimensional Rift', cooldown: 4, effect: {'type': 'multi_hit', 'target': 'random_enemies', 'hits': 6, 'multiplier': 0.6}),

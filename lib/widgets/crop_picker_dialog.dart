@@ -50,6 +50,20 @@ class CropPickerDialog extends StatelessWidget {
     }
   }
 
+  String _dropIcon(String type) {
+    switch (type) {
+      case 'Attack Crystal': return '⚔';
+      case 'Defense Core': return '🛡';
+      case 'Speed Chip': return '⚡';
+      case 'Mutagen': return '🧬';
+      case 'Egg Fragment': return '🥚';
+      case 'random_material': return '🎲';
+      case 'golden_boost': return '✨';
+      case 'golden_guarantee': return '🌟';
+      default: return '📦';
+    }
+  }
+
   String _formatTime(int seconds) {
     if (seconds < 60) return '${seconds}s';
     final m = seconds ~/ 60;
@@ -64,6 +78,7 @@ class CropPickerDialog extends StatelessWidget {
     final availableCrops = GameData.crops.where((c) =>
         gs.unlockedCrops.contains(c.id) && c.category != 'mutation').toList();
     final hasBatchPlant = gs.skills.contains('batch_plant');
+    final currentAssigned = gs.farmTiles[tileRow][tileCol].assignedCrop;
 
     return SimpleDialog(
       backgroundColor: const Color(0xFF1a1a2e),
@@ -109,6 +124,32 @@ class CropPickerDialog extends StatelessWidget {
         ],
       ),
       children: [
+        // Current assignment display
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: (currentAssigned != null ? const Color(0xFF4CAF50) : const Color(0xFF2196F3)).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: (currentAssigned != null ? const Color(0xFF4CAF50) : const Color(0xFF2196F3)).withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                Text(currentAssigned != null ? '📌' : '⚙️', style: const TextStyle(fontSize: 14)),
+                const SizedBox(width: 6),
+                Text(
+                  currentAssigned != null
+                    ? '고정: ${GameData.crops.where((c) => c.id == currentAssigned).firstOrNull?.name ?? currentAssigned}'
+                    : '고정 없음 (자동)',
+                  style: TextStyle(
+                    color: currentAssigned != null ? const Color(0xFF4CAF50) : const Color(0xFF2196F3),
+                    fontSize: 12, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+          ),
+
         // Batch plant button (if skill unlocked)
         if (hasBatchPlant)
           Padding(
@@ -200,21 +241,32 @@ class CropPickerDialog extends StatelessWidget {
                         const SizedBox(height: 2),
                         Row(
                           children: [
-                            Text(
-                              '\uD83D\uDCB0${crop.value}',
-                              style: const TextStyle(color: Color(0xFFFFD700), fontSize: 11),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '\u23F0${_formatTime(crop.growTime)}',
-                              style: const TextStyle(color: Colors.white54, fontSize: 11),
-                            ),
+                            // Show gold or drop icons
+                            if (crop.value > 0)
+                              Text('💰${crop.value}',
+                                style: const TextStyle(color: Color(0xFFFFD700), fontSize: 11)),
+                            if (crop.drops.isNotEmpty) ...[
+                              if (crop.value > 0) const SizedBox(width: 4),
+                              ...crop.drops.map((d) => Padding(
+                                padding: const EdgeInsets.only(right: 4),
+                                child: Text('${_dropIcon(d.type)}${d.amount}',
+                                  style: const TextStyle(color: Color(0xFF88CCFF), fontSize: 11)),
+                              )),
+                            ],
+                            if (crop.value == 0 && crop.drops.isEmpty)
+                              const Text('—', style: TextStyle(color: Colors.white38, fontSize: 11)),
+                            const Spacer(),
+                            Text('⏰${_formatTime(crop.growTime)}',
+                              style: const TextStyle(color: Colors.white54, fontSize: 11)),
                           ],
                         ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right, color: Colors.white24, size: 18),
+                  if (currentAssigned == crop.id)
+                    const Text('📌', style: TextStyle(fontSize: 14))
+                  else
+                    const Icon(Icons.chevron_right, color: Colors.white24, size: 18),
                 ],
               ),
             ),

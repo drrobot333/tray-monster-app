@@ -805,20 +805,18 @@ class GameEngine {
 
     battle.allyStates = state.team.map((idx) {
       final ally = state.allies[idx];
-      final levelMult = 1 + (ally.level - 1) * 0.1;
       final codexAtkMult = 1 + getCodexBonus()['atkMult']!;
-      final effSpd = (ally.baseSpd * levelMult).floor();
       return BattleAllyState(
         id: ally.id,
         name: ally.name,
         role: ally.role,
-        hp: (ally.baseHp * levelMult).floor(),
-        maxHp: (ally.baseHp * levelMult).floor(),
-        atk: (ally.baseAtk * levelMult * codexAtkMult).floor(),
-        def: (ally.baseDef * levelMult).floor(),
-        spd: effSpd,
+        hp: ally.hp,
+        maxHp: ally.hp,
+        atk: (ally.atk * codexAtkMult).floor(),
+        def: ally.def,
+        spd: ally.spd,
         ability: ally.ability,
-        actionTimer: 30.0 / max(1, effSpd),
+        actionTimer: 30.0 / max(1, ally.spd),
       );
     }).toList();
   }
@@ -1835,13 +1833,17 @@ class GameEngine {
   // ============================================================
   // ALLY UPGRADES
   // ============================================================
+  // Stat-independent upgrade costs
+  int allyGoldCost(int statLv) => (200 * pow(1.8, statLv)).floor();
+  int allyMatCost(int statLv) => (2 * pow(1.5, statLv)).floor();
+
   void upgradeAlly(int allyIndex, String stat) {
     if (allyIndex < 0 || allyIndex >= state.allies.length) return;
     final ally = state.allies[allyIndex];
 
-    final level = ally.level;
-    final cost = (100 * pow(1.5, level - 1)).floor();
-    final matCost = (3 * pow(1.3, level - 1)).floor();
+    final statLv = ally.statLevel(stat);
+    final cost = allyGoldCost(statLv);
+    final matCost = allyMatCost(statLv);
 
     if (state.gold < cost) {
       _notify('골드 부족!');
@@ -1865,21 +1867,17 @@ class GameEngine {
 
     state.gold -= cost;
     state.materials[matType] = (state.materials[matType] ?? 0) - matCost;
-    ally.level++;
 
-    // Increase base stats
-    if (stat == 'atk') {
-      ally.baseAtk += 3;
-    } else if (stat == 'def') {
-      ally.baseDef += 2;
-    } else if (stat == 'spd') {
-      ally.baseSpd += 1;
-    } else if (stat == 'hp') {
-      ally.baseHp += 15;
+    // Increment stat-specific level only (stats are computed)
+    switch (stat) {
+      case 'atk': ally.atkLevel++; break;
+      case 'def': ally.defLevel++; break;
+      case 'spd': ally.spdLevel++; break;
+      case 'hp': ally.hpLevel++; break;
     }
-    ally.baseHp += 5;
+    ally.level = ally.totalLevel;
 
-    _notify('${ally.name} Lv.${ally.level}!');
+    _notify('${ally.name} ${stat.toUpperCase()} Lv.${ally.statLevel(stat)}!');
     advanceMission('upgrade', 1);
   }
 

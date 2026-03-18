@@ -111,27 +111,59 @@ class RobotState {
 
 class OwnedAlly {
   final String id, name, role, rarity;
-  int baseAtk, baseDef, baseSpd, baseHp;
+  final int baseAtk, baseDef, baseSpd, baseHp; // original from game_data, never changes
   final AbilityData ability;
   int level;
+  int atkLevel, defLevel, spdLevel, hpLevel;
+
+  // Rarity multipliers: [atk, def, spd, hp]
+  static const _rarityMult = {
+    'Newbie':    [1.0, 1.0, 0.5, 5.0],
+    'Normal':    [2.0, 1.5, 0.5, 8.0],
+    'Rookie':    [3.0, 2.0, 1.0, 12.0],
+    'Legendary': [4.0, 3.0, 1.0, 18.0],
+    'Mythic':    [5.0, 4.0, 2.0, 25.0],
+  };
+  List<double> get _mult => _rarityMult[rarity] ?? [1.0, 1.0, 0.5, 5.0];
+
+  // Computed stats: base + level * rarity_multiplier
+  int get atk => baseAtk + (atkLevel * _mult[0]).floor();
+  int get def => baseDef + (defLevel * _mult[1]).floor();
+  int get spd => baseSpd + (spdLevel * _mult[2]).floor();
+  int get hp => baseHp + (hpLevel * _mult[3]).floor();
+  int get totalLevel => 1 + atkLevel + defLevel + spdLevel + hpLevel;
+
   OwnedAlly({required this.id, required this.name, required this.role,
     required this.rarity, required this.baseAtk, required this.baseDef,
-    required this.baseSpd, required this.baseHp, required this.ability, this.level = 1});
+    required this.baseSpd, required this.baseHp, required this.ability,
+    this.level = 1, this.atkLevel = 0, this.defLevel = 0, this.spdLevel = 0, this.hpLevel = 0});
   factory OwnedAlly.fromAllyData(AllyData a) => OwnedAlly(
     id: a.id, name: a.name, role: a.role, rarity: a.rarity,
     baseAtk: a.baseAtk, baseDef: a.baseDef, baseSpd: a.baseSpd,
     baseHp: a.baseHp, ability: a.ability);
+  int statLevel(String stat) {
+    switch (stat) { case 'atk': return atkLevel; case 'def': return defLevel;
+      case 'spd': return spdLevel; case 'hp': return hpLevel; default: return 0; }
+  }
   Map<String, dynamic> toJson() => {
     'id': id, 'name': name, 'role': role, 'rarity': rarity,
     'baseAtk': baseAtk, 'baseDef': baseDef, 'baseSpd': baseSpd, 'baseHp': baseHp,
-    'level': level, 'ability': {'name': ability.name, 'cooldown': ability.cooldown, 'effect': ability.effect},
+    'level': totalLevel, 'atkLevel': atkLevel, 'defLevel': defLevel, 'spdLevel': spdLevel, 'hpLevel': hpLevel,
+    'ability': {'name': ability.name, 'cooldown': ability.cooldown, 'effect': ability.effect},
   };
-  factory OwnedAlly.fromJson(Map<String, dynamic> j) => OwnedAlly(
+  factory OwnedAlly.fromJson(Map<String, dynamic> j) {
+    final oldLevel = (j['level'] ?? 1) as int;
+    final hasStatLevels = j.containsKey('atkLevel');
+    final fallback = hasStatLevels ? 0 : ((oldLevel - 1) ~/ 4);
+    return OwnedAlly(
     id: j['id'] as String, name: j['name'] as String, role: j['role'] as String, rarity: j['rarity'] as String,
     baseAtk: j['baseAtk'] as int, baseDef: j['baseDef'] as int, baseSpd: j['baseSpd'] as int, baseHp: j['baseHp'] as int,
     ability: AbilityData(name: (j['ability']?['name'] ?? '') as String, cooldown: (j['ability']?['cooldown'] ?? 2) as int,
       effect: Map<String, dynamic>.from(j['ability']?['effect'] ?? {})),
-    level: j['level'] ?? 1);
+    level: oldLevel,
+    atkLevel: j['atkLevel'] ?? fallback, defLevel: j['defLevel'] ?? fallback,
+    spdLevel: j['spdLevel'] ?? fallback, hpLevel: j['hpLevel'] ?? fallback);
+  }
 }
 
 class IncubatingEgg {
