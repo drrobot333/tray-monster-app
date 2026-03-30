@@ -81,7 +81,7 @@ class _GameScreenState extends State<GameScreen> {
       case 4:
         return UpgradeTab(engine: _engine!);
       case 5:
-        return const CodexTab();
+        return CodexTab(engine: _engine!);
       default:
         return const SizedBox.shrink();
     }

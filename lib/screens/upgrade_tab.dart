@@ -16,7 +16,25 @@ class UpgradeTab extends StatefulWidget {
 
 class _UpgradeTabState extends State<UpgradeTab> {
   int _subTab = 0;
+  String _sortBy = 'rarity';
   GameEngine get engine => widget.engine;
+
+  static const _rarityOrder = {'Mythic': 0, 'Legendary': 1, 'Rookie': 2, 'Normal': 3, 'Newbie': 4};
+
+  List<int> _sortedIndices(List<dynamic> allies) {
+    final indices = List.generate(allies.length, (i) => i);
+    indices.sort((a, b) {
+      final aa = allies[a], bb = allies[b];
+      switch (_sortBy) {
+        case 'atk': return bb.atk.compareTo(aa.atk);
+        case 'def': return bb.def.compareTo(aa.def);
+        case 'spd': return bb.spd.compareTo(aa.spd);
+        case 'hp': return bb.hp.compareTo(aa.hp);
+        default: return (_rarityOrder[aa.rarity] ?? 5).compareTo(_rarityOrder[bb.rarity] ?? 5);
+      }
+    });
+    return indices;
+  }
 
   Color _rarityColor(String rarity) {
     switch (rarity) {
@@ -95,41 +113,31 @@ class _UpgradeTabState extends State<UpgradeTab> {
           border: Border.all(color: const Color(0xFF333333)),
         ),
         child: Row(children: [
-          _subTabButton(0, '⚔ 유닛'),
-          _subTabButton(1, '🔮 유물'),
-          _subTabButton(2, '⭐ 어빌리티'),
+          _subTabButton(0, '🤖 로봇'),
+          _subTabButton(1, '⚔ 유닛'),
+          _subTabButton(2, '🔮 유물'),
+          _subTabButton(3, '⭐ 어빌'),
         ]),
       ),
       Expanded(child: _subTab == 0
-        ? _buildUnitUpgrade(context)
+        ? _buildRobotUpgrade(context)
         : _subTab == 1
-          ? ArtifactManage(engine: engine)
-          : AbilityTab(engine: engine)),
+          ? _buildUnitUpgrade(context)
+          : _subTab == 2
+            ? ArtifactManage(engine: engine)
+            : AbilityTab(engine: engine)),
     ]);
   }
 
-  Widget _buildUnitUpgrade(BuildContext context) {
+  Widget _buildRobotUpgrade(BuildContext context) {
     final gs = context.watch<GameState>();
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '\uD83D\uDCCA \uAC15\uD654',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '\uACE8\uB4DC: ${gs.gold}',
-            style: const TextStyle(color: Color(0xFFFFD700), fontSize: 13),
-          ),
-          const SizedBox(height: 16),
+          Text('골드: ${gs.gold}', style: const TextStyle(color: Color(0xFFFFD700), fontSize: 13)),
+          const SizedBox(height: 12),
 
           // Robot upgrades section
           _sectionHeader('\uD83E\uDD16 \uB85C\uBD07 \uAC15\uD654'),
@@ -276,10 +284,46 @@ class _UpgradeTabState extends State<UpgradeTab> {
             ),
           ),
 
-          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUnitUpgrade(BuildContext context) {
+    final gs = context.watch<GameState>();
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('골드: ${gs.gold}', style: const TextStyle(color: Color(0xFFFFD700), fontSize: 13)),
+          const SizedBox(height: 12),
 
           // Ally upgrades section
-          _sectionHeader('\uD83D\uDC65 \uC544\uAD70 \uAC15\uD654'),
+          Row(children: [
+            Expanded(child: _sectionHeader('\uD83D\uDC65 \uC544\uAD70 \uAC15\uD654')),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0d1117), borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: const Color(0xFF333333))),
+              child: DropdownButton<String>(
+                value: _sortBy,
+                dropdownColor: const Color(0xFF0d1117),
+                style: const TextStyle(color: Colors.white70, fontSize: 11),
+                underline: const SizedBox.shrink(),
+                isDense: true,
+                items: const [
+                  DropdownMenuItem(value: 'rarity', child: Text('등급순')),
+                  DropdownMenuItem(value: 'atk', child: Text('공격순')),
+                  DropdownMenuItem(value: 'def', child: Text('방어순')),
+                  DropdownMenuItem(value: 'spd', child: Text('속도순')),
+                  DropdownMenuItem(value: 'hp', child: Text('체력순')),
+                ],
+                onChanged: (v) => setState(() { _sortBy = v ?? 'rarity'; }),
+              ),
+            ),
+          ]),
           const SizedBox(height: 8),
 
           if (gs.allies.isEmpty)
@@ -298,10 +342,9 @@ class _UpgradeTabState extends State<UpgradeTab> {
               ),
             ),
 
-          ...gs.allies.asMap().entries.map((entry) {
-            final allyIndex = entry.key;
-            final ally = entry.value;
-            // costs are per-stat now
+          ..._sortedIndices(gs.allies).map((allyIndex) {
+            final ally = gs.allies[allyIndex];
+            final isInTeam = gs.team.contains(allyIndex);
             return Card(
               color: const Color(0xFF0d1117),
               shape: RoundedRectangleBorder(
@@ -323,11 +366,29 @@ class _UpgradeTabState extends State<UpgradeTab> {
                             fontSize: 14,
                           ),
                         ),
+                        if (isInTeam) ...[
+                          const SizedBox(width: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF4CAF50).withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(3)),
+                            child: const Text('팀', style: TextStyle(color: Color(0xFF4CAF50), fontSize: 8, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                        if (ally.awakening > 0) ...[
+                          const SizedBox(width: 4),
+                          Text('★${ally.awakening}',
+                            style: const TextStyle(color: Color(0xFFFFD700), fontSize: 11, fontWeight: FontWeight.bold)),
+                        ],
                         const SizedBox(width: 6),
                         Text(
                           'Lv.${ally.level}',
                           style: const TextStyle(color: Color(0xFFFFD700), fontSize: 12),
                         ),
+                        const Spacer(),
+                        Text('보유수: ${ally.duplicates}',
+                          style: const TextStyle(color: Colors.white38, fontSize: 9)),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -366,6 +427,35 @@ class _UpgradeTabState extends State<UpgradeTab> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 6),
+                    // Awakening button
+                    Builder(builder: (_) {
+                      final dupsNeeded = ally.awakenDuplicatesNeeded;
+                      final coreNeeded = ally.awakenCoreCost;
+                      final hasDups = ally.duplicates >= dupsNeeded;
+                      final hasCores = (gs.materials['attackCrystal'] ?? 0) >= coreNeeded &&
+                          (gs.materials['defenseCore'] ?? 0) >= coreNeeded &&
+                          (gs.materials['speedChip'] ?? 0) >= coreNeeded &&
+                          (gs.materials['mutagen'] ?? 0) >= coreNeeded;
+                      final canAwaken = hasDups && hasCores;
+                      return GestureDetector(
+                        onTap: canAwaken ? () => engine.awakenAlly(allyIndex) : null,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 5),
+                          decoration: BoxDecoration(
+                            color: canAwaken ? const Color(0xFFFFD700).withValues(alpha: 0.2) : const Color(0xFF1a1a1a),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: canAwaken ? const Color(0xFFFFD700) : const Color(0xFF333333))),
+                          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                            Text('⭐ ★${ally.awakening}→★${ally.awakening + 1} 각성',
+                              style: TextStyle(color: canAwaken ? const Color(0xFFFFD700) : Colors.white38, fontSize: 10, fontWeight: FontWeight.bold)),
+                            const SizedBox(width: 8),
+                            Text('유닛 ${ally.duplicates}/$dupsNeeded  코어 각 ${coreNeeded}',
+                              style: TextStyle(color: canAwaken ? Colors.white54 : Colors.white24, fontSize: 8)),
+                          ]),
+                        ),
+                      );
+                    }),
                   ],
                 ),
               ),

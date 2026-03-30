@@ -5,17 +5,17 @@ import '../models/models.dart';
 // =========================================================================
 const List<OreData> oreList = [
   // Common
-  OreData(id: 'iron', name: '철', category: 'common', value: 7, rarity: 0.35),
-  OreData(id: 'copper', name: '구리', category: 'common', value: 10, rarity: 0.30),
-  OreData(id: 'coal', name: '석탄', category: 'common', value: 8, rarity: 0.20),
+  OreData(id: 'iron', name: '철', category: 'common', value: 20, rarity: 0.35),
+  OreData(id: 'copper', name: '구리', category: 'common', value: 30, rarity: 0.30),
+  OreData(id: 'coal', name: '석탄', category: 'common', value: 25, rarity: 0.20),
   // Mid
-  OreData(id: 'goldOre', name: '금', category: 'mid', value: 18, rarity: 0.20),
-  OreData(id: 'silver', name: '은', category: 'mid', value: 15, rarity: 0.18),
-  OreData(id: 'emerald', name: '에메랄드', category: 'mid', value: 20, rarity: 0.15),
+  OreData(id: 'goldOre', name: '금', category: 'mid', value: 55, rarity: 0.20),
+  OreData(id: 'silver', name: '은', category: 'mid', value: 45, rarity: 0.18),
+  OreData(id: 'emerald', name: '에메랄드', category: 'mid', value: 65, rarity: 0.15),
   // Rare
-  OreData(id: 'ruby', name: '루비', category: 'rare', value: 35, rarity: 0.08),
-  OreData(id: 'diamond', name: '다이아', category: 'rare', value: 90, rarity: 0.04),
-  OreData(id: 'mithril', name: '미스릴', category: 'rare', value: 60, rarity: 0.02),
+  OreData(id: 'ruby', name: '루비', category: 'rare', value: 120, rarity: 0.08),
+  OreData(id: 'diamond', name: '다이아', category: 'rare', value: 300, rarity: 0.04),
+  OreData(id: 'mithril', name: '미스릴', category: 'rare', value: 200, rarity: 0.02),
 ];
 
 // =========================================================================

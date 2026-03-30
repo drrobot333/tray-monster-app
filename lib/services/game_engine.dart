@@ -298,7 +298,8 @@ class GameEngine {
     // Apply codex gold bonus
     final artBonus = getArtifactBonuses();
     final abBonus = getAbilityBonuses();
-    goldEarned = (goldEarned * (1 + getCodexBonus()['goldMult']! + (artBonus['goldMult'] ?? 0) + (abBonus['gold'] ?? 0))).floor();
+    final bondBonus = getBondBonuses();
+    goldEarned = (goldEarned * (1 + getCodexBonus()['goldMult']! + (artBonus['goldMult'] ?? 0) + (abBonus['gold'] ?? 0) + (bondBonus['gold'] ?? 0))).floor();
 
     // Sleepwalking: 50% gold, accumulate for later
     final eff = _robotEfficiency(state.robot);
@@ -743,12 +744,9 @@ class GameEngine {
         final allyData = candidates[_rng.nextInt(candidates.length)];
         final existingIdx = state.allies.indexWhere((a) => a.id == allyData.id);
         if (existingIdx >= 0) {
-          // Duplicate -> materials
-          final dupAmount = (loot.matMax * 0.8).floor();
-          state.materials['attackCrystal'] = (state.materials['attackCrystal'] ?? 0) + dupAmount;
-          state.materials['defenseCore'] = (state.materials['defenseCore'] ?? 0) + dupAmount;
-          state.materials['speedChip'] = (state.materials['speedChip'] ?? 0) + dupAmount;
-          _notify('중복! ${allyData.name} -> 재료 x$dupAmount!');
+          // Duplicate -> stored for awakening
+          state.allies[existingIdx].duplicates++;
+          _notify('중복! ${allyData.name} → 보유수 +1 (${state.allies[existingIdx].duplicates}개)');
         } else {
           state.allies.add(OwnedAlly.fromAllyData(allyData));
           if (!state.codexAllies.contains(allyData.id)) {
@@ -835,11 +833,12 @@ class GameEngine {
       final codex = getCodexBonus();
       final art = getArtifactBonuses();
       final ab = getAbilityBonuses();
-      final allStat = ab['allStat'] ?? 0;
-      final atkMult = 1 + codex['atkMult']! + (art['atkMult'] ?? 0) + (ab['atk'] ?? 0) + allStat;
-      final defMult = 1 + (art['defMult'] ?? 0) + (ab['def'] ?? 0) + allStat;
-      final spdMult = 1 + (art['spdMult'] ?? 0) + (ab['spd'] ?? 0) + allStat;
-      final hpMult = 1 + (art['hpMult'] ?? 0) + (ab['hp'] ?? 0) + allStat;
+      final bond = getBondBonuses();
+      final allStat = (ab['allStat'] ?? 0) + (bond['allStat'] ?? 0);
+      final atkMult = 1 + codex['atkMult']! + (art['atkMult'] ?? 0) + (ab['atk'] ?? 0) + (bond['atk'] ?? 0) + allStat;
+      final defMult = 1 + (art['defMult'] ?? 0) + (ab['def'] ?? 0) + (bond['def'] ?? 0) + allStat;
+      final spdMult = 1 + (art['spdMult'] ?? 0) + (ab['spd'] ?? 0) + (bond['spd'] ?? 0) + allStat;
+      final hpMult = 1 + (art['hpMult'] ?? 0) + (ab['hp'] ?? 0) + (bond['hp'] ?? 0) + allStat;
       final finalSpd = (ally.spd * spdMult).floor();
       return BattleAllyState(
         id: ally.id,
@@ -902,10 +901,12 @@ class GameEngine {
         final effSpd = _getEffectiveStatAlly(ally, 'spd');
         ally.actionTimer = 30.0 / max(1, effSpd);
 
+        final allyIdx = battle.allyStates.indexOf(ally);
         ally.abilityCharges++;
         if (ally.abilityCharges >= ally.ability.cooldown) {
           ally.abilityCharges = 0;
           _executeAllyAbility(ally);
+          battle.effects.add(BattleEffect(type: 'ability', allyIndex: allyIdx, timer: 0.4));
         } else {
           final dmg = calculateDamage(
             _getEffectiveStatAlly(ally, 'atk'),
@@ -913,6 +914,7 @@ class GameEngine {
           );
           battle.bossHp -= dmg;
           battle.log.add('${ally.name}: $dmg');
+          battle.effects.add(BattleEffect(type: 'allyAtk', allyIndex: allyIdx, damage: dmg, timer: 0.4));
         }
       }
     }
@@ -944,6 +946,10 @@ class GameEngine {
       battle.log.add('전멸! 패배...');
       return;
     }
+
+    // Update effects
+    for (final eff in battle.effects) { eff.timer -= dt; }
+    battle.effects.removeWhere((e) => e.timer <= 0);
 
     // Update buff/debuff durations (tick every 2 seconds)
     battle.turnInterval -= dt;
@@ -1160,6 +1166,8 @@ class GameEngine {
                 final dmg = calculateDamage((bossData.atk * mult).floor(), _getEffectiveStatAlly(ally, 'def'));
                 ally.hp -= dmg;
                 if (ally.hp <= 0) { ally.hp = 0; ally.alive = false; }
+                final aidx = battle.allyStates.indexOf(ally);
+                battle.effects.add(BattleEffect(type: 'bossAtk', allyIndex: aidx, damage: dmg, timer: 0.5));
               }
             }
             battle.log.add('보스 ${ab.name}!');
@@ -1180,6 +1188,8 @@ class GameEngine {
                 singleTarget.alive = false;
                 battle.log.add('${singleTarget.name} 쓰러짐!');
               }
+              final tidx = battle.allyStates.indexOf(singleTarget);
+              battle.effects.add(BattleEffect(type: 'bossAtk', allyIndex: tidx, damage: dmg, timer: 0.5));
             }
             battle.log.add('보스 ${ab.name}!');
             break;
@@ -1923,6 +1933,35 @@ class GameEngine {
     advanceMission('upgrade', 1);
   }
 
+  void awakenAlly(int allyIndex) {
+    if (allyIndex < 0 || allyIndex >= state.allies.length) return;
+    final ally = state.allies[allyIndex];
+
+    final dupsNeeded = ally.awakenDuplicatesNeeded;
+    final coreNeeded = ally.awakenCoreCost;
+
+    if (ally.duplicates < dupsNeeded) {
+      _notify('중복 유닛 ${dupsNeeded}개 필요! (보유: ${ally.duplicates})');
+      return;
+    }
+    if ((state.materials['attackCrystal'] ?? 0) < coreNeeded ||
+        (state.materials['defenseCore'] ?? 0) < coreNeeded ||
+        (state.materials['speedChip'] ?? 0) < coreNeeded ||
+        (state.materials['mutagen'] ?? 0) < coreNeeded) {
+      _notify('강화코어 각 ${coreNeeded}개 필요!');
+      return;
+    }
+
+    ally.duplicates -= dupsNeeded;
+    state.materials['attackCrystal'] = (state.materials['attackCrystal'] ?? 0) - coreNeeded;
+    state.materials['defenseCore'] = (state.materials['defenseCore'] ?? 0) - coreNeeded;
+    state.materials['speedChip'] = (state.materials['speedChip'] ?? 0) - coreNeeded;
+    state.materials['mutagen'] = (state.materials['mutagen'] ?? 0) - coreNeeded;
+    ally.awakening++;
+
+    _notify('⭐ ${ally.name} ★${ally.awakening} 각성! (스탯 +${ally.awakening * 10}%)');
+  }
+
   // ============================================================
   // ROBOT UPGRADES
   // ============================================================
@@ -2152,11 +2191,10 @@ class GameEngine {
   // ============================================================
 
   // Get total artifact bonus for a given effect type
+  // All owned artifacts apply bonuses (no equip needed)
   Map<String, double> getArtifactBonuses() {
     final bonuses = <String, double>{};
-    for (final idx in state.equippedArtifacts) {
-      if (idx < 0 || idx >= state.ownedArtifacts.length) continue;
-      final art = state.ownedArtifacts[idx];
+    for (final art in state.ownedArtifacts) {
       final data = GameData.artifacts.where((a) => a.id == art.artifactId).firstOrNull;
       if (data == null) continue;
       bonuses[data.effectType] = (bonuses[data.effectType] ?? 0) + art.effectValue;
@@ -2354,6 +2392,33 @@ class GameEngine {
   void viewAbilitySlot(int slot) {
     if (slot < 0 || slot >= AbilityState.maxSlots) return;
     state.ability.viewingSlot = slot;
+  }
+
+  // ============================================================
+  // BONDS (인연)
+  // ============================================================
+  Map<String, double> getBondBonuses() {
+    final bonuses = <String, double>{};
+    final ownedIds = state.allies.map((a) => a.id).toSet();
+
+    for (final bond in GameData.bonds) {
+      // Check all units are owned
+      if (!bond.unitIds.every((id) => ownedIds.contains(id))) continue;
+
+      // Bond level = minimum awakening among the units
+      int minAwaken = 999;
+      for (final uid in bond.unitIds) {
+        final ally = state.allies.firstWhere((a) => a.id == uid);
+        if (ally.awakening < minAwaken) minAwaken = ally.awakening;
+      }
+      // Bond activates even at awakening 0 (level 1 base)
+      final bondLevel = minAwaken + 1;
+
+      for (final eff in bond.effects) {
+        bonuses[eff.stat] = (bonuses[eff.stat] ?? 0) + eff.perLevel * bondLevel;
+      }
+    }
+    return bonuses;
   }
 
   // Get total ability bonuses (for applying to game systems)

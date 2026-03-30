@@ -111,10 +111,12 @@ class RobotState {
 
 class OwnedAlly {
   final String id, name, role, rarity;
-  final int baseAtk, baseDef, baseSpd, baseHp; // original from game_data, never changes
+  final int baseAtk, baseDef, baseSpd, baseHp;
   final AbilityData ability;
   int level;
   int atkLevel, defLevel, spdLevel, hpLevel;
+  int awakening; // ★ level (0 = not awakened)
+  int duplicates; // stored duplicate units for awakening
 
   // Rarity multipliers: [atk, def, spd, hp]
   static const _rarityMult = {
@@ -126,17 +128,25 @@ class OwnedAlly {
   };
   List<double> get _mult => _rarityMult[rarity] ?? [1.0, 1.0, 0.5, 5.0];
 
-  // Computed stats: base + level * rarity_multiplier
-  int get atk => baseAtk + (atkLevel * _mult[0]).floor();
-  int get def => baseDef + (defLevel * _mult[1]).floor();
-  int get spd => baseSpd + (spdLevel * _mult[2]).floor();
-  int get hp => baseHp + (hpLevel * _mult[3]).floor();
+  // Awakening multiplier: base stats * (1 + awakening * 0.1)
+  double get _awakenMult => 1.0 + awakening * 0.1;
+
+  // Computed stats: (base * awakenMult) + level * rarity_multiplier
+  int get atk => (baseAtk * _awakenMult).floor() + (atkLevel * _mult[0]).floor();
+  int get def => (baseDef * _awakenMult).floor() + (defLevel * _mult[1]).floor();
+  int get spd => (baseSpd * _awakenMult).floor() + (spdLevel * _mult[2]).floor();
+  int get hp => (baseHp * _awakenMult).floor() + (hpLevel * _mult[3]).floor();
   int get totalLevel => 1 + atkLevel + defLevel + spdLevel + hpLevel;
+
+  // Awakening cost
+  int get awakenDuplicatesNeeded => awakening + 1;
+  int get awakenCoreCost => (awakening + 1) * 10000;
 
   OwnedAlly({required this.id, required this.name, required this.role,
     required this.rarity, required this.baseAtk, required this.baseDef,
     required this.baseSpd, required this.baseHp, required this.ability,
-    this.level = 1, this.atkLevel = 0, this.defLevel = 0, this.spdLevel = 0, this.hpLevel = 0});
+    this.level = 1, this.atkLevel = 0, this.defLevel = 0, this.spdLevel = 0, this.hpLevel = 0,
+    this.awakening = 0, this.duplicates = 0});
   factory OwnedAlly.fromAllyData(AllyData a) => OwnedAlly(
     id: a.id, name: a.name, role: a.role, rarity: a.rarity,
     baseAtk: a.baseAtk, baseDef: a.baseDef, baseSpd: a.baseSpd,
@@ -149,6 +159,7 @@ class OwnedAlly {
     'id': id, 'name': name, 'role': role, 'rarity': rarity,
     'baseAtk': baseAtk, 'baseDef': baseDef, 'baseSpd': baseSpd, 'baseHp': baseHp,
     'level': totalLevel, 'atkLevel': atkLevel, 'defLevel': defLevel, 'spdLevel': spdLevel, 'hpLevel': hpLevel,
+    'awakening': awakening, 'duplicates': duplicates,
     'ability': {'name': ability.name, 'cooldown': ability.cooldown, 'effect': ability.effect},
   };
   factory OwnedAlly.fromJson(Map<String, dynamic> j) {
@@ -162,8 +173,27 @@ class OwnedAlly {
       effect: Map<String, dynamic>.from(j['ability']?['effect'] ?? {})),
     level: oldLevel,
     atkLevel: j['atkLevel'] ?? fallback, defLevel: j['defLevel'] ?? fallback,
-    spdLevel: j['spdLevel'] ?? fallback, hpLevel: j['hpLevel'] ?? fallback);
+    spdLevel: j['spdLevel'] ?? fallback, hpLevel: j['hpLevel'] ?? fallback,
+    awakening: (j['awakening'] as num?)?.toInt() ?? 0,
+    duplicates: (j['duplicates'] as num?)?.toInt() ?? 0);
   }
+}
+
+// =========================================================================
+// BOND (인연) SYSTEM
+// =========================================================================
+class BondEffect {
+  final String stat; // atk, def, spd, hp, gold, growth, golden, bossDmg, allStat
+  final double perLevel; // bonus per bond level
+  const BondEffect(this.stat, this.perLevel);
+}
+
+class BondData {
+  final String id, name, emoji;
+  final List<String> unitIds; // required unit IDs
+  final List<BondEffect> effects;
+  const BondData({required this.id, required this.name, required this.emoji,
+    required this.unitIds, required this.effects});
 }
 
 class IncubatingEgg {
@@ -194,6 +224,14 @@ class BattleAllyState {
     this.actionTimer = 0, this.abilityCharges = 0});
 }
 
+class BattleEffect {
+  String type; // 'allyAtk', 'bossAtk', 'heal', 'ability'
+  int? allyIndex; // which ally is attacking/being hit
+  int damage;
+  double timer;
+  BattleEffect({required this.type, this.allyIndex, this.damage = 0, this.timer = 0.5});
+}
+
 class BattleState {
   bool active = false;
   String? bossId;
@@ -206,6 +244,7 @@ class BattleState {
   double resultTimer = 0;
   List<BattleAllyState> allyStates = [];
   Map<String, dynamic> bossState = {};
+  List<BattleEffect> effects = [];
 }
 
 class Mission {

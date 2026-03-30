@@ -3,10 +3,33 @@ import 'package:provider/provider.dart';
 import '../models/game_state.dart';
 import '../services/game_engine.dart';
 
-class TeamTab extends StatelessWidget {
+class TeamTab extends StatefulWidget {
   final GameEngine engine;
-
   const TeamTab({super.key, required this.engine});
+  @override
+  State<TeamTab> createState() => _TeamTabState();
+}
+
+class _TeamTabState extends State<TeamTab> {
+  String _sortBy = 'rarity'; // rarity, atk, def, spd, hp
+  GameEngine get engine => widget.engine;
+
+  static const _rarityOrder = {'Mythic': 0, 'Legendary': 1, 'Rookie': 2, 'Normal': 3, 'Newbie': 4};
+
+  List<int> _sortedIndices(List<dynamic> allies) {
+    final indices = List.generate(allies.length, (i) => i);
+    indices.sort((a, b) {
+      final aa = allies[a], bb = allies[b];
+      switch (_sortBy) {
+        case 'atk': return bb.atk.compareTo(aa.atk);
+        case 'def': return bb.def.compareTo(aa.def);
+        case 'spd': return bb.spd.compareTo(aa.spd);
+        case 'hp': return bb.hp.compareTo(aa.hp);
+        default: return (_rarityOrder[aa.rarity] ?? 5).compareTo(_rarityOrder[bb.rarity] ?? 5);
+      }
+    });
+    return indices;
+  }
 
   Color _rarityColor(String rarity) {
     switch (rarity) {
@@ -57,14 +80,15 @@ class TeamTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final gs = context.watch<GameState>();
     final allies = gs.allies;
-    final team = gs.team; // List<int> - indices into allies
+    final team = gs.team;
+    final sortedIdx = _sortedIndices(allies);
 
     return Padding(
       padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // Header + sort
           Row(
             children: [
               const Text(
@@ -92,6 +116,29 @@ class TeamTab extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Sort dropdown
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0d1117), borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: const Color(0xFF333333))),
+                child: DropdownButton<String>(
+                  value: _sortBy,
+                  dropdownColor: const Color(0xFF0d1117),
+                  style: const TextStyle(color: Colors.white70, fontSize: 11),
+                  underline: const SizedBox.shrink(),
+                  isDense: true,
+                  items: const [
+                    DropdownMenuItem(value: 'rarity', child: Text('등급순')),
+                    DropdownMenuItem(value: 'atk', child: Text('공격순')),
+                    DropdownMenuItem(value: 'def', child: Text('방어순')),
+                    DropdownMenuItem(value: 'spd', child: Text('속도순')),
+                    DropdownMenuItem(value: 'hp', child: Text('체력순')),
+                  ],
+                  onChanged: (v) => setState(() { _sortBy = v ?? 'rarity'; }),
                 ),
               ),
             ],
@@ -182,8 +229,9 @@ class TeamTab extends StatelessWidget {
                     ),
                   )
                 : ListView.builder(
-                    itemCount: allies.length,
-                    itemBuilder: (context, i) {
+                    itemCount: sortedIdx.length,
+                    itemBuilder: (context, si) {
+                      final i = sortedIdx[si];
                       final ally = allies[i];
                       final isInTeam = team.contains(i);
 

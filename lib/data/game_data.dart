@@ -8,12 +8,12 @@ import 'cooking_data.dart' as cooking;
 // =========================================================================
 const List<CropData> _crops = [
   // --- BASIC CROPS ---
-  CropData(id: 'tomato', name: '토마토', category: 'basic', growTime: 30, value: 10, unlockStage: 0, drops: []),
-  CropData(id: 'potato', name: '감자', category: 'basic', growTime: 40, value: 15, unlockStage: 0, drops: []),
-  CropData(id: 'corn', name: '옥수수', category: 'basic', growTime: 50, value: 20, unlockStage: 0, drops: []),
-  CropData(id: 'carrot', name: '당근', category: 'basic', growTime: 30, value: 12, unlockStage: 0, drops: []),
-  CropData(id: 'wheat', name: '밀', category: 'basic', growTime: 60, value: 30, unlockStage: 1, drops: []),
-  CropData(id: 'pumpkin', name: '호박', category: 'basic', growTime: 90, value: 60, unlockStage: 3, drops: []),
+  CropData(id: 'tomato', name: '토마토', category: 'basic', growTime: 30, value: 30, unlockStage: 0, drops: []),
+  CropData(id: 'potato', name: '감자', category: 'basic', growTime: 40, value: 50, unlockStage: 0, drops: []),
+  CropData(id: 'corn', name: '옥수수', category: 'basic', growTime: 50, value: 70, unlockStage: 0, drops: []),
+  CropData(id: 'carrot', name: '당근', category: 'basic', growTime: 30, value: 35, unlockStage: 0, drops: []),
+  CropData(id: 'wheat', name: '밀', category: 'basic', growTime: 60, value: 100, unlockStage: 1, drops: []),
+  CropData(id: 'pumpkin', name: '호박', category: 'basic', growTime: 90, value: 200, unlockStage: 3, drops: []),
 
   // --- COMBAT CROPS ---
   CropData(id: 'fire_pepper', name: '불고추', category: 'combat', growTime: 50, value: 0, unlockStage: 1, drops: [Drop('Attack Crystal', 1)]),
@@ -27,16 +27,16 @@ const List<CropData> _crops = [
 
   // --- RARE CROPS ---
   CropData(id: 'lucky_clover', name: '행운클로버', category: 'rare', growTime: 50, value: 5, unlockStage: 3, drops: []),
-  CropData(id: 'starfruit', name: '별열매', category: 'rare', growTime: 120, value: 100, unlockStage: 8, drops: [Drop('Egg Fragment', 3)]),
-  CropData(id: 'moon_blossom', name: '달꽃', category: 'rare', growTime: 120, value: 80, unlockStage: 10, drops: [Drop('Mutagen', 3)]),
-  CropData(id: 'sunstone_fruit', name: '태양석과일', category: 'rare', growTime: 100, value: 120, unlockStage: 12, drops: []),
+  CropData(id: 'starfruit', name: '별열매', category: 'rare', growTime: 120, value: 300, unlockStage: 8, drops: [Drop('Egg Fragment', 3)]),
+  CropData(id: 'moon_blossom', name: '달꽃', category: 'rare', growTime: 120, value: 250, unlockStage: 10, drops: [Drop('Mutagen', 3)]),
+  CropData(id: 'sunstone_fruit', name: '태양석과일', category: 'rare', growTime: 100, value: 400, unlockStage: 12, drops: []),
 
   // --- MUTATION CROPS ---
-  CropData(id: 'giant_tomato', name: '거대토마토', category: 'mutation', growTime: 0, value: 200, unlockStage: 0, drops: []),
+  CropData(id: 'giant_tomato', name: '거대토마토', category: 'mutation', growTime: 0, value: 600, unlockStage: 0, drops: []),
   CropData(id: 'inferno_blossom', name: '지옥꽃', category: 'mutation', growTime: 0, value: 0, unlockStage: 0, drops: [Drop('Attack Crystal', 5)]),
   CropData(id: 'arcane_vine', name: '마법덩굴', category: 'mutation', growTime: 0, value: 0, unlockStage: 0, drops: [Drop('Attack Crystal', 3), Drop('Defense Core', 3), Drop('Speed Chip', 3), Drop('Mutagen', 3)]),
-  CropData(id: 'rainbow_clover', name: '무지개클로버', category: 'mutation', growTime: 0, value: 500, unlockStage: 0, drops: [Drop('golden_guarantee', 1)]),
-  CropData(id: 'harvest_king', name: '수확왕', category: 'mutation', growTime: 0, value: 300, unlockStage: 0, drops: [Drop('Egg Fragment', 5)]),
+  CropData(id: 'rainbow_clover', name: '무지개클로버', category: 'mutation', growTime: 0, value: 1500, unlockStage: 0, drops: [Drop('golden_guarantee', 1)]),
+  CropData(id: 'harvest_king', name: '수확왕', category: 'mutation', growTime: 0, value: 1000, unlockStage: 0, drops: [Drop('Egg Fragment', 5)]),
   CropData(id: 'doom_spore', name: '파멸포자', category: 'mutation', growTime: 0, value: 0, unlockStage: 0, drops: [Drop('Mutagen', 5)]),
 ];
 
@@ -559,5 +559,42 @@ class GameData {
     ArtifactChestTier(id: 'diamond_chest', name: '다이아 상자', goldCost: 150000, keyCost: 500,
       goldW: 20, matW: 15, artifactW: 65,
       rarityWeights: {'Legendary': 55, 'Mythic': 45}),
+  ];
+
+  // Bonds (인연)
+  static const List<BondData> bonds = [
+    // 2-unit bonds (15)
+    BondData(id: 'flame_friends', name: '불꽃 친구', emoji: '🔥', unitIds: ['ember_pup', 'flame_fox'], effects: [BondEffect('atk', 0.03)]),
+    BondData(id: 'water_bond', name: '물의 인연', emoji: '💧', unitIds: ['puddle_slime', 'coral_sprite'], effects: [BondEffect('hp', 0.03)]),
+    BondData(id: 'thunder_combo', name: '번개 콤비', emoji: '⚡', unitIds: ['zap_bug', 'storm_falcon'], effects: [BondEffect('spd', 0.02)]),
+    BondData(id: 'iron_wall', name: '철벽 듀오', emoji: '🪨', unitIds: ['pebble_golem', 'iron_beetle'], effects: [BondEffect('def', 0.03)]),
+    BondData(id: 'forest_harmony', name: '숲의 조화', emoji: '🌿', unitIds: ['sproutling', 'vine_whip'], effects: [BondEffect('growth', 0.02)]),
+    BondData(id: 'battle_harmony', name: '전장의 하모니', emoji: '🎵', unitIds: ['war_drummer', 'cosmic_bard'], effects: [BondEffect('atk', 0.02)]),
+    BondData(id: 'dark_pact', name: '어둠의 맹약', emoji: '💀', unitIds: ['shadow_cat', 'banshee_queen'], effects: [BondEffect('bossDmg', 0.03)]),
+    BondData(id: 'dragon_blood', name: '용의 혈통', emoji: '🐉', unitIds: ['magma_drake', 'celestial_dragon'], effects: [BondEffect('atk', 0.05)]),
+    BondData(id: 'guardian_oath', name: '수호자의 맹세', emoji: '🛡', unitIds: ['crystal_guardian', 'obsidian_warden'], effects: [BondEffect('def', 0.05)]),
+    BondData(id: 'healing_light', name: '치유의 빛', emoji: '💚', unitIds: ['moonwell_fairy', 'seraph_medic'], effects: [BondEffect('hp', 0.05)]),
+    BondData(id: 'time_trick', name: '시간의 장난', emoji: '⏱', unitIds: ['quicksilver', 'chrono_rabbit'], effects: [BondEffect('spd', 0.04)]),
+    BondData(id: 'star_resonance', name: '별의 공명', emoji: '🌟', unitIds: ['supernova', 'meteor_golem'], effects: [BondEffect('atk', 0.04)]),
+    BondData(id: 'earth_rumble', name: '대지의 울림', emoji: '🏔', unitIds: ['granite_titan', 'world_turtle'], effects: [BondEffect('def', 0.04)]),
+    BondData(id: 'life_cycle', name: '생명의 순환', emoji: '🌸', unitIds: ['life_tree_spirit', 'sproutling'], effects: [BondEffect('gold', 0.03)]),
+    BondData(id: 'infinite_paradox', name: '무한의 역설', emoji: '♾️', unitIds: ['infinity_golem', 'void_reaper'], effects: [BondEffect('allStat', 0.02)]),
+    // 3-unit bonds (10)
+    BondData(id: 'poison_trio', name: '독의 삼중주', emoji: '🍄', unitIds: ['thorn_rat', 'plague_rat', 'mushroom_knight'], effects: [BondEffect('bossDmg', 0.05)]),
+    BondData(id: 'flame_legion', name: '화염 군단', emoji: '🔥', unitIds: ['ember_pup', 'flame_fox', 'phoenix_hatchling'], effects: [BondEffect('atk', 0.06)]),
+    BondData(id: 'iron_fortress', name: '철의 성벽', emoji: '🛡', unitIds: ['iron_beetle', 'crystal_guardian', 'obsidian_warden'], effects: [BondEffect('def', 0.06)]),
+    BondData(id: 'nature_blessing', name: '자연의 축복', emoji: '🌿', unitIds: ['sproutling', 'honey_bee', 'life_tree_spirit'], effects: [BondEffect('hp', 0.06)]),
+    BondData(id: 'storm_eye', name: '폭풍의 눈', emoji: '⚡', unitIds: ['zap_bug', 'wind_hawk', 'storm_falcon'], effects: [BondEffect('spd', 0.05)]),
+    BondData(id: 'explosion_trio', name: '폭발 삼총사', emoji: '💣', unitIds: ['bomb_berry', 'seed_shooter', 'meteor_golem'], effects: [BondEffect('atk', 0.05)]),
+    BondData(id: 'moonlight_serenade', name: '달빛 세레나데', emoji: '🌙', unitIds: ['glow_moth', 'moonwell_fairy', 'aurora_stag'], effects: [BondEffect('golden', 0.03)]),
+    BondData(id: 'blade_dance', name: '칼날의 춤', emoji: '⚔', unitIds: ['blade_dancer', 'quicksilver', 'shadow_cat'], effects: [BondEffect('spd', 0.04), BondEffect('atk', 0.03)]),
+    BondData(id: 'divine_beasts', name: '신수의 회합', emoji: '🐲', unitIds: ['celestial_dragon', 'phoenix_hatchling', 'world_turtle'], effects: [BondEffect('allStat', 0.03)]),
+    BondData(id: 'doom_herald', name: '종말의 전조', emoji: '☠', unitIds: ['void_reaper', 'banshee_queen', 'plague_rat'], effects: [BondEffect('bossDmg', 0.06)]),
+    // 5-unit bonds (5)
+    BondData(id: 'rookie_alliance', name: '루키 동맹', emoji: '👶', unitIds: ['sproutling', 'ember_pup', 'puddle_slime', 'zap_bug', 'pebble_golem'], effects: [BondEffect('gold', 0.05)]),
+    BondData(id: 'elite_squad', name: '정예 부대', emoji: '⚔', unitIds: ['iron_beetle', 'flame_fox', 'wind_hawk', 'mushroom_knight', 'shadow_cat'], effects: [BondEffect('atk', 0.04), BondEffect('def', 0.04)]),
+    BondData(id: 'legendary_order', name: '전설의 기사단', emoji: '👑', unitIds: ['obsidian_warden', 'phoenix_hatchling', 'seraph_medic', 'quicksilver', 'blade_dancer'], effects: [BondEffect('allStat', 0.04)]),
+    BondData(id: 'mythic_pantheon', name: '신화의 판테온', emoji: '🌌', unitIds: ['world_turtle', 'celestial_dragon', 'life_tree_spirit', 'chrono_rabbit', 'supernova'], effects: [BondEffect('allStat', 0.05)]),
+    BondData(id: 'conqueror', name: '만물의 정복자', emoji: '🏆', unitIds: ['cosmic_bard', 'void_reaper', 'infinity_golem', 'aurora_stag', 'meteor_golem'], effects: [BondEffect('allStat', 0.04), BondEffect('gold', 0.05)]),
   ];
 }

@@ -2,9 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/game_state.dart';
 import '../data/game_data.dart';
+import '../services/game_engine.dart';
+import 'bond_tab.dart';
 
-class CodexTab extends StatelessWidget {
-  const CodexTab({super.key});
+class CodexTab extends StatefulWidget {
+  final GameEngine engine;
+  const CodexTab({super.key, required this.engine});
+  @override
+  State<CodexTab> createState() => _CodexTabState();
+}
+
+class _CodexTabState extends State<CodexTab> {
+  int _subTab = 0;
 
   Color _rarityColor(String rarity) {
     switch (rarity) {
@@ -21,8 +30,46 @@ class CodexTab extends StatelessWidget {
     }
   }
 
+  Widget _subTabButton(int index, String label) {
+    final isActive = _subTab == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() { _subTab = index; }),
+        child: Container(
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isActive ? const Color(0xFF4CAF50).withValues(alpha: 0.15) : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+            border: isActive ? Border.all(color: const Color(0xFF4CAF50).withValues(alpha: 0.5)) : null,
+          ),
+          child: Text(label, style: TextStyle(
+            color: isActive ? const Color(0xFF4CAF50) : Colors.white54,
+            fontSize: 12, fontWeight: isActive ? FontWeight.bold : FontWeight.normal)),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    return Column(children: [
+      Container(
+        height: 36,
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0d1117), borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFF333333)),
+        ),
+        child: Row(children: [
+          _subTabButton(0, '📖 도감'),
+          _subTabButton(1, '🤝 인연'),
+        ]),
+      ),
+      Expanded(child: _subTab == 0 ? _buildCodex(context) : BondTab(engine: widget.engine)),
+    ]);
+  }
+
+  Widget _buildCodex(BuildContext context) {
     final gs = context.watch<GameState>();
 
     final allAllyIds = GameData.allies.map((a) => a.id).toList();
